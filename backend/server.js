@@ -8,6 +8,7 @@ const entryRoutes = require('./routes/entries');
 const approvalRoutes = require('./routes/approvals');
 const dashboardRoutes = require("./routes/dashboard");
 const workerRoutes = require("./routes/workers");
+const exportRoutes = require("./routes/export");
 
 const app = express();
 
@@ -19,6 +20,7 @@ app.use('/api/entries', entryRoutes);
 app.use('/api/approvals', approvalRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/workers", workerRoutes);
+app.use("/api/export", exportRoutes);
 
 app.get('/', (req, res) => {
   res.send('PIMS Backend Running...');
