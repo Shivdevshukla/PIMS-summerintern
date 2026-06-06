@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
+import { toast } from "react-toastify";
 import api from "../api";
+import Swal from "sweetalert2";
 
 export default function Workers() {
-
   const [workers, setWorkers] = useState([]);
   const [search, setSearch] = useState("");
   const [name, setName] = useState("");
@@ -19,28 +20,36 @@ export default function Workers() {
       setWorkers(res.data);
     } catch (err) {
       console.log(err);
+      toast.error("Failed to Load Workers");
     }
   };
 
   const addWorker = async (e) => {
     e.preventDefault();
 
-    try {
+    if (!name.trim() || !code.trim()) {
+      return toast.warning("Please fill all fields");
+    }
 
+    try {
       await api.post("/workers", {
         name,
         code,
       });
 
+      toast.success("Worker Added Successfully");
+
       setName("");
       setCode("");
 
       loadWorkers();
-
-      alert("Worker Added");
-
     } catch (err) {
       console.log(err);
+
+      toast.error(
+        err.response?.data?.error ||
+          "Failed to Add Worker"
+      );
     }
   };
 
@@ -48,7 +57,6 @@ export default function Workers() {
     e.preventDefault();
 
     try {
-
       await api.put(
         `/workers/${editingWorker.id}`,
         {
@@ -57,41 +65,60 @@ export default function Workers() {
         }
       );
 
-      alert("Worker Updated");
+      toast.success(
+        "Worker Updated Successfully"
+      );
 
       setEditingWorker(null);
       setName("");
       setCode("");
 
       loadWorkers();
-
     } catch (err) {
       console.log(err);
+
+      toast.error(
+        err.response?.data?.error ||
+          "Failed to Update Worker"
+      );
     }
   };
 
   const deleteWorker = async (id) => {
-    try {
+    const result = await Swal.fire({
+      title: "Delete Worker?",
+      text: "This action cannot be undone.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#dc2626",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Delete",
+    });
 
+    if (!result.isConfirmed) return;
+
+    try {
       await api.delete(`/workers/${id}`);
 
-      alert("Worker Deleted");
+      toast.success(
+        "Worker Deleted Successfully"
+      );
 
       loadWorkers();
-
     } catch (err) {
       console.log(err);
+
+      toast.error(
+        err.response?.data?.error ||
+          "Failed to Delete Worker"
+      );
     }
   };
 
   const editWorker = (worker) => {
-
     setEditingWorker(worker);
-
     setName(worker.name);
-
     setCode(worker.code);
-
   };
 
   const filteredWorkers = workers.filter(
@@ -105,14 +132,20 @@ export default function Workers() {
   );
 
   return (
-    <div>
+    <div className="p-6 text-gray-900 dark:text-white">
 
-      <h1 className="text-3xl font-bold mb-6">
-        Worker Management
-      </h1>
+      {/* Header */}
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold">
+          Worker Management
+        </h1>
+
+        <p className="text-gray-500 dark:text-gray-300 mt-1">
+          Add, update and manage workers
+        </p>
+      </div>
 
       {/* Add / Update Worker Form */}
-
       <form
         onSubmit={
           editingWorker
@@ -121,13 +154,13 @@ export default function Workers() {
         }
         className="
         bg-white
+        dark:bg-gray-800
         p-6
         rounded-2xl
         shadow-lg
         mb-6
         "
       >
-
         <div className="grid md:grid-cols-2 gap-4">
 
           <input
@@ -137,7 +170,19 @@ export default function Workers() {
             onChange={(e) =>
               setName(e.target.value)
             }
-            className="border p-3 rounded-lg"
+            className="
+            border
+            border-gray-300
+            dark:border-gray-600
+            bg-white
+            dark:bg-gray-700
+            text-gray-900
+            dark:text-white
+            p-3
+            rounded-lg
+            focus:ring-2
+            focus:ring-blue-500
+            "
             required
           />
 
@@ -148,10 +193,21 @@ export default function Workers() {
             onChange={(e) =>
               setCode(e.target.value)
             }
-            className="border p-3 rounded-lg"
+            className="
+            border
+            border-gray-300
+            dark:border-gray-600
+            bg-white
+            dark:bg-gray-700
+            text-gray-900
+            dark:text-white
+            p-3
+            rounded-lg
+            focus:ring-2
+            focus:ring-blue-500
+            "
             required
           />
-
         </div>
 
         <div className="mt-4 flex gap-3">
@@ -164,6 +220,7 @@ export default function Workers() {
             px-5
             py-2
             rounded-lg
+            transition
             "
           >
             {editingWorker
@@ -186,27 +243,25 @@ export default function Workers() {
               px-5
               py-2
               rounded-lg
+              transition
               "
             >
               Cancel
             </button>
           )}
-
         </div>
-
       </form>
 
       {/* Worker List */}
-
       <div
         className="
         bg-white
+        dark:bg-gray-800
         rounded-2xl
         shadow-lg
         p-6
         "
       >
-
         <input
           type="text"
           placeholder="Search Worker by Name or Code..."
@@ -216,6 +271,12 @@ export default function Workers() {
           }
           className="
           border
+          border-gray-300
+          dark:border-gray-600
+          bg-white
+          dark:bg-gray-700
+          text-gray-900
+          dark:text-white
           p-3
           rounded-lg
           mb-4
@@ -223,114 +284,119 @@ export default function Workers() {
           "
         />
 
-        <table className="w-full">
+        <div className="overflow-x-auto">
 
-          <thead>
+          <table className="w-full">
 
-            <tr className="border-b bg-gray-100">
+            <thead>
+              <tr
+                className="
+                border-b
+                bg-gray-100
+                dark:bg-gray-700
+                "
+              >
+                <th className="p-4 text-left">
+                  Code
+                </th>
 
-              <th className="p-4 text-left">
-                Code
-              </th>
+                <th className="p-4 text-left">
+                  Name
+                </th>
 
-              <th className="p-4 text-left">
-                Name
-              </th>
+                <th className="p-4 text-left">
+                  Action
+                </th>
+              </tr>
+            </thead>
 
-              <th className="p-4 text-left">
-                Action
-              </th>
+            <tbody>
 
-            </tr>
+              {filteredWorkers.length > 0 ? (
 
-          </thead>
+                filteredWorkers.map((worker) => (
 
-          <tbody>
+                  <tr
+                    key={worker.id}
+                    className="
+                    border-b
+                    border-gray-200
+                    dark:border-gray-700
+                    hover:bg-blue-50
+                    dark:hover:bg-gray-700
+                    transition
+                    "
+                  >
+                    <td className="p-4">
+                      {worker.code}
+                    </td>
 
-            {filteredWorkers.length > 0 ? (
+                    <td className="p-4">
+                      {worker.name}
+                    </td>
 
-              filteredWorkers.map((worker) => (
+                    <td className="p-4 flex gap-2">
 
-                <tr
-                  key={worker.id}
-                  className="
-                  border-b
-                  hover:bg-blue-50
-                  transition
-                  "
-                >
+                      <button
+                        onClick={() =>
+                          editWorker(worker)
+                        }
+                        className="
+                        bg-yellow-500
+                        hover:bg-yellow-600
+                        text-white
+                        px-3
+                        py-1
+                        rounded
+                        "
+                      >
+                        Edit
+                      </button>
 
-                  <td className="p-4">
-                    {worker.code}
+                      <button
+                        onClick={() =>
+                          deleteWorker(worker.id)
+                        }
+                        className="
+                        bg-red-600
+                        hover:bg-red-700
+                        text-white
+                        px-3
+                        py-1
+                        rounded
+                        "
+                      >
+                        Delete
+                      </button>
+
+                    </td>
+                  </tr>
+
+                ))
+
+              ) : (
+
+                <tr>
+                  <td
+                    colSpan="3"
+                    className="
+                    text-center
+                    p-6
+                    text-gray-500
+                    dark:text-gray-400
+                    "
+                  >
+                    No Workers Found
                   </td>
-
-                  <td className="p-4">
-                    {worker.name}
-                  </td>
-
-                  <td className="p-4 flex gap-2">
-
-                    <button
-                      onClick={() =>
-                        editWorker(worker)
-                      }
-                      className="
-                      bg-yellow-500
-                      hover:bg-yellow-600
-                      text-white
-                      px-3
-                      py-1
-                      rounded
-                      "
-                    >
-                      Edit
-                    </button>
-
-                    <button
-                      onClick={() =>
-                        deleteWorker(worker.id)
-                      }
-                      className="
-                      bg-red-600
-                      hover:bg-red-700
-                      text-white
-                      px-3
-                      py-1
-                      rounded
-                      "
-                    >
-                      Delete
-                    </button>
-
-                  </td>
-
                 </tr>
 
-              ))
+              )}
 
-            ) : (
+            </tbody>
 
-              <tr>
+          </table>
 
-                <td
-                  colSpan="3"
-                  className="
-                  text-center
-                  p-6
-                  text-gray-500
-                  "
-                >
-                  No Workers Found
-                </td>
-
-              </tr>
-
-            )}
-
-          </tbody>
-
-        </table>
-
+        </div>
       </div>
 
     </div>

@@ -2,130 +2,151 @@ import { NavLink } from "react-router-dom";
 import { useSelector } from "react-redux";
 
 export default function Sidebar() {
-
   const { user } = useSelector(
     (state) => state.auth
   );
+
+  const navClass = ({ isActive }) =>
+    `
+    block
+    p-3
+    rounded-lg
+    transition
+    ${
+      isActive
+        ? "bg-blue-600 text-white"
+        : "hover:bg-blue-50 dark:hover:bg-gray-700"
+    }
+  `;
 
   return (
     <div
       className="
       w-64
       bg-white
+      dark:bg-gray-800
+      text-gray-800
+      dark:text-white
       shadow-lg
       min-h-screen
+      transition-colors
+      duration-300
       "
     >
-
       {/* Logo */}
 
-      <div className="p-5 border-b">
-
+      <div
+        className="
+        p-5
+        border-b
+        border-gray-200
+        dark:border-gray-700
+        "
+      >
         <h2
           className="
           text-2xl
           font-bold
           text-blue-700
+          dark:text-blue-400
           "
         >
           PIMS
         </h2>
 
-        <p className="text-sm text-gray-500 mt-1">
+        <p
+          className="
+          text-sm
+          text-gray-500
+          dark:text-gray-300
+          mt-1
+          "
+        >
           {user?.role
             ?.replace("_", " ")
             .toUpperCase()}
         </p>
-
       </div>
 
       {/* Menu */}
 
-      <div className="p-3 space-y-1">
+      <div className="p-3 space-y-2">
 
-        <NavLink
-          to="/"
-          className="block p-3 rounded hover:bg-blue-50"
-        >
+        <NavLink to="/" className={navClass}>
           Dashboard
         </NavLink>
-
-        {/* Shift Incharge */}
 
         {user?.role === "shift_incharge" && (
           <NavLink
             to="/create-entry"
-            className="block p-3 rounded hover:bg-blue-50"
+            className={navClass}
           >
             Create Entry
           </NavLink>
         )}
 
-        {/* HOD */}
-
         {user?.role === "hod" && (
           <NavLink
             to="/hod-dashboard"
-            className="block p-3 rounded hover:bg-blue-50"
+            className={navClass}
           >
             HOD Dashboard
           </NavLink>
         )}
 
-        {/* Superintendent */}
-
-        {user?.role ===
-          "superintendent" && (
+        {user?.role === "superintendent" && (
           <NavLink
             to="/superintendent-dashboard"
-            className="block p-3 rounded hover:bg-blue-50"
+            className={navClass}
           >
             Superintendent Dashboard
           </NavLink>
         )}
 
-        {/* HR */}
-
         {user?.role === "hr" && (
           <>
             <NavLink
               to="/hr-dashboard"
-              className="block p-3 rounded hover:bg-blue-50"
+              className={navClass}
             >
               HR Dashboard
             </NavLink>
 
             <NavLink
               to="/reports-dashboard"
-              className="block p-3 rounded hover:bg-blue-50"
+              className={navClass}
             >
               Reports Dashboard
             </NavLink>
           </>
         )}
 
-        {/* Admin */}
-
         {user?.role === "admin" && (
           <>
             <NavLink
               to="/reports-dashboard"
-              className="block p-3 rounded hover:bg-blue-50"
+              className={navClass}
             >
               Reports Dashboard
             </NavLink>
 
             <NavLink
               to="/workers"
-              className="block p-3 rounded hover:bg-blue-50"
+              className={navClass}
             >
               Worker Management
+            </NavLink>
+
+            <NavLink
+              to="/users"
+              className={navClass}
+            >
+              User Management
             </NavLink>
           </>
         )}
 
       </div>
-
     </div>
   );
 }

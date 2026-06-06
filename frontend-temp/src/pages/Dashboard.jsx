@@ -51,7 +51,7 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="text-center p-10 text-xl">
+      <div className="text-center p-10 text-xl text-gray-900 dark:text-white">
         Loading Dashboard...
       </div>
     );
@@ -77,7 +77,7 @@ export default function Dashboard() {
           Shift Incharge Dashboard
         </h1>
 
-        <p className="text-gray-500 mt-2">
+<p className="text-gray-500 dark:text-gray-400 mt-2">
           Production Incentive Management Overview
         </p>
       </div>
@@ -133,21 +133,23 @@ export default function Dashboard() {
       >
 
         {/* Total Entries */}
-
-        <div
-          className="
-          bg-white
-          rounded-2xl
-          p-6
-          shadow-lg
-          hover:shadow-xl
-          hover:-translate-y-1
-          transition-all
-          duration-300
-          "
-        >
-          <div className="flex items-center gap-2 text-gray-500">
-            <FaClipboardList />
+<div
+  className="
+  bg-white
+  dark:bg-slate-800
+  rounded-2xl
+  p-6
+  shadow-lg
+  hover:shadow-xl
+  hover:-translate-y-1
+  transition-all
+  duration-300
+  text-gray-900
+  dark:text-white
+  "
+>
+<div className="flex items-center gap-2 text-gray-500 dark:text-gray-300">
+              <FaClipboardList />
             <h3>Total Entries</h3>
           </div>
 
@@ -160,7 +162,7 @@ export default function Dashboard() {
 
         <div
           className="
-          bg-white
+          bg-white dark:bg-slate-800
           rounded-2xl
           p-6
           shadow-lg
@@ -183,18 +185,21 @@ export default function Dashboard() {
         {/* Approved */}
 
         <div
-          className="
-          bg-white
-          rounded-2xl
-          p-6
-          shadow-lg
-          hover:shadow-xl
-          hover:-translate-y-1
-          transition-all
-          duration-300
-          "
-        >
-          <div className="flex items-center gap-2 text-gray-500">
+  className="
+  bg-white
+  dark:bg-slate-800
+  rounded-2xl
+  p-6
+  shadow-lg
+  hover:shadow-xl
+  hover:-translate-y-1
+  transition-all
+  duration-300
+  text-gray-900
+  dark:text-white
+  "
+>
+          <div className="flex items-center gap-2 text-gray-500 dark:text-gray-300">
             <FaCheckCircle />
             <h3>Approved</h3>
           </div>
@@ -208,7 +213,7 @@ export default function Dashboard() {
 
         <div
           className="
-          bg-white
+          bg-white dark:bg-slate-800
           rounded-2xl
           p-6
           shadow-lg
@@ -232,8 +237,17 @@ export default function Dashboard() {
 
       {/* Approval Workflow */}
 
-      <div className="bg-white rounded-2xl shadow-lg p-6">
-
+<div
+  className="
+  bg-white dark:bg-slate-800
+  dark:bg-slate-800
+  rounded-2xl
+  shadow-lg
+  p-6
+  text-gray-900
+  dark:text-white
+  "
+>
         <h2 className="text-xl font-semibold mb-6">
           Approval Workflow
         </h2>
@@ -276,7 +290,7 @@ export default function Dashboard() {
 
       <div
         className="
-        bg-white
+        bg-white dark:bg-slate-800
         rounded-2xl
         shadow-lg
         p-6
@@ -294,8 +308,7 @@ export default function Dashboard() {
 
             <thead>
 
-              <tr className="border-b bg-gray-100">
-
+<tr className="border-b bg-gray-100 dark:bg-slate-700">
                 <th className="p-4 text-left">
                   OC Number
                 </th>
@@ -325,6 +338,7 @@ export default function Dashboard() {
                     className="
                     border-b
                     hover:bg-blue-50
+                    dark:hover:bg-slate-700
                     transition
                     "
                   >
@@ -355,6 +369,7 @@ export default function Dashboard() {
                     text-center
                     p-6
                     text-gray-500
+                    dark:text-gray-400
                     "
                   >
                     No entries found

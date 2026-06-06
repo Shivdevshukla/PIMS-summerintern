@@ -1,3 +1,4 @@
+import { toast } from "react-toastify";
 import { useState, useEffect } from "react";
 import api from "../api";
 
@@ -36,14 +37,15 @@ export default function CreateEntry() {
   ]);
 
   const loadWorkers = async () => {
-    try {
-      const res = await api.get("/workers");
-      setWorkers(res.data);
-    } catch (err) {
-      console.log(err);
-    }
-  };
-
+  try {
+    const res = await api.get("/workers");
+    setWorkers(res.data);
+  } catch (err) {
+    toast.error(
+      "Failed to Load Workers"
+    );
+  }
+};
   const handleChange = (e) => {
     setForm({
       ...form,
@@ -52,29 +54,49 @@ export default function CreateEntry() {
   };
 
   const submitEntry = async (e) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    try {
-      await api.post("/entries", form);
+  if (
+    !form.worker_id ||
+    !form.oc_number ||
+    !form.oc_stage ||
+    !form.machine_id ||
+    !form.shift ||
+    !form.production_quantity
+  ) {
+    return toast.warning(
+      "Please fill all required fields"
+    );
+  }
 
-      alert("Production Entry Submitted");
+  try {
+    await api.post("/entries", form);
 
-      setForm({
-        worker_id: "",
-        oc_number: "",
-        oc_stage: "",
-        machine_id: "",
-        shift: "",
-        production_quantity: "",
-        incentive_rate: 5,
-        incentive_amount: 0,
-      });
+    toast.success(
+      "Production Entry Submitted Successfully"
+    );
 
-    } catch (err) {
-      console.log(err);
-      alert("Submission Failed");
-    }
-  };
+    setForm({
+      worker_id: "",
+      oc_number: "",
+      oc_stage: "",
+      machine_id: "",
+      shift: "",
+      production_quantity: "",
+      incentive_rate: 5,
+      incentive_amount: 0,
+    });
+
+  } catch (err) {
+
+    console.log(err);
+
+    toast.error(
+      err.response?.data?.error ||
+      "Submission Failed"
+    );
+  }
+};
 
   return (
     <div>

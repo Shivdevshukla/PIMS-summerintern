@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
+import { toast } from "react-toastify";
 import api from "../api";
+import Swal from "sweetalert2";
 
 export default function SuperintendentDashboard() {
   const [entries, setEntries] = useState([]);
@@ -20,118 +22,265 @@ export default function SuperintendentDashboard() {
       setEntries(pendingEntries);
 
     } catch (err) {
+
       console.log(err);
+
+      toast.error(
+        "Failed to Load Entries"
+      );
     }
   };
 
   const approveEntry = async (entry) => {
-    try {
 
-      await api.put(
-        `/approvals/superintendent/${entry.id}`,
-        {
-          action: "approve",
-          remarks: "Approved by Superintendent",
-          production_quantity:
-            entry.production_quantity
-        }
-      );
+  const result = await Swal.fire({
+    title: "Approve Entry?",
+    text: "This entry will move to HR for final approval.",
+    icon: "question",
+    showCancelButton: true,
+    confirmButtonColor: "#16a34a",
+    cancelButtonColor: "#6b7280",
+    confirmButtonText: "Approve",
+  });
 
-      alert("Entry Approved");
+  if (!result.isConfirmed) return;
 
-      loadEntries();
+  try {
 
-    } catch (err) {
-      console.log(err);
-    }
-  };
+    await api.put(
+      `/approvals/superintendent/${entry.id}`,
+      {
+        action: "approve",
+        remarks: "Approved by Superintendent",
+        production_quantity:
+          entry.production_quantity,
+      }
+    );
+
+    toast.success(
+      "Entry Approved By Superintendent"
+    );
+
+    loadEntries();
+
+  } catch (err) {
+
+    console.log(err);
+
+    toast.error(
+      "Approval Failed"
+    );
+  }
+};
 
   const rejectEntry = async (entry) => {
-    try {
 
-      await api.put(
-        `/approvals/superintendent/${entry.id}`,
-        {
-          action: "reject",
-          remarks: "Rejected by Superintendent",
-          production_quantity:
-            entry.production_quantity
-        }
-      );
+  const result = await Swal.fire({
+    title: "Reject Entry?",
+    text: "This entry will be rejected.",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonColor: "#dc2626",
+    cancelButtonColor: "#6b7280",
+    confirmButtonText: "Reject",
+  });
 
-      alert("Entry Rejected");
+  if (!result.isConfirmed) return;
 
-      loadEntries();
+  try {
 
-    } catch (err) {
-      console.log(err);
-    }
-  };
+    await api.put(
+      `/approvals/superintendent/${entry.id}`,
+      {
+        action: "reject",
+        remarks: "Rejected by Superintendent",
+        production_quantity:
+          entry.production_quantity,
+      }
+    );
+
+    toast.error(
+      "Entry Rejected By Superintendent"
+    );
+
+    loadEntries();
+
+  } catch (err) {
+
+    console.log(err);
+
+    toast.error(
+      "Rejection Failed"
+    );
+  }
+};
 
   return (
     <div>
-      <h1 className="text-3xl font-bold mb-6">
-        Superintendent Dashboard
-      </h1>
 
-      <div className="bg-white rounded-xl shadow p-6">
-        <table className="w-full">
+      <div className="mb-6">
 
-          <thead>
-            <tr className="border-b">
-              <th className="p-3">OC Number</th>
-              <th className="p-3">Quantity</th>
-              <th className="p-3">Status</th>
-              <th className="p-3">Action</th>
-            </tr>
-          </thead>
+        <h1 className="text-3xl font-bold text-gray-800">
+          Superintendent Dashboard
+        </h1>
 
-          <tbody>
-            {entries.map((entry) => (
-              <tr key={entry.id} className="border-b">
+        <p className="text-gray-500 mt-1">
+          Review HOD approved production entries
+        </p>
 
-                <td className="p-3">
-                  {entry.oc_number}
-                </td>
+      </div>
 
-                <td className="p-3">
-                  {entry.production_quantity}
-                </td>
+      <div
+        className="
+        bg-white
+        rounded-2xl
+        shadow-lg
+        p-6
+        "
+      >
 
-                <td className="p-3">
-                  {entry.status}
-                </td>
+        <div className="overflow-x-auto">
 
-                <td className="p-3">
-                  <div className="flex gap-2">
+          <table className="w-full">
 
-                    <button
-                      onClick={() =>
-                        approveEntry(entry)
-                      }
-                      className="bg-green-600 text-white px-4 py-2 rounded"
-                    >
-                      Approve
-                    </button>
+            <thead>
 
-                    <button
-                      onClick={() =>
-                        rejectEntry(entry)
-                      }
-                      className="bg-red-600 text-white px-4 py-2 rounded"
-                    >
-                      Reject
-                    </button>
+              <tr className="bg-gray-100 border-b">
 
-                  </div>
-                </td>
+                <th className="p-4 text-left">
+                  OC Number
+                </th>
+
+                <th className="p-4 text-left">
+                  Quantity
+                </th>
+
+                <th className="p-4 text-left">
+                  Status
+                </th>
+
+                <th className="p-4 text-left">
+                  Action
+                </th>
 
               </tr>
-            ))}
-          </tbody>
 
-        </table>
+            </thead>
+
+            <tbody>
+
+              {entries.length > 0 ? (
+
+                entries.map((entry) => (
+
+                  <tr
+                    key={entry.id}
+                    className="
+                    border-b
+                    hover:bg-blue-50
+                    transition
+                    "
+                  >
+
+                    <td className="p-4">
+                      {entry.oc_number}
+                    </td>
+
+                    <td className="p-4">
+                      {entry.production_quantity}
+                    </td>
+
+                    <td className="p-4">
+
+                      <span
+                        className="
+                        bg-blue-100
+                        text-blue-700
+                        px-3
+                        py-1
+                        rounded-full
+                        text-sm
+                        font-medium
+                        "
+                      >
+                        Pending Superintendent
+                      </span>
+
+                    </td>
+
+                    <td className="p-4">
+
+                      <div className="flex gap-2">
+
+                        <button
+                          onClick={() =>
+                            approveEntry(entry)
+                          }
+                          className="
+                          bg-green-600
+                          hover:bg-green-700
+                          text-white
+                          px-4
+                          py-2
+                          rounded-lg
+                          transition
+                          "
+                        >
+                          Approve
+                        </button>
+
+                        <button
+                          onClick={() =>
+                            rejectEntry(entry)
+                          }
+                          className="
+                          bg-red-600
+                          hover:bg-red-700
+                          text-white
+                          px-4
+                          py-2
+                          rounded-lg
+                          transition
+                          "
+                        >
+                          Reject
+                        </button>
+
+                      </div>
+
+                    </td>
+
+                  </tr>
+
+                ))
+
+              ) : (
+
+                <tr>
+
+                  <td
+                    colSpan="4"
+                    className="
+                    text-center
+                    p-10
+                    text-gray-500
+                    "
+                  >
+                    No Pending Superintendent Approvals
+                  </td>
+
+                </tr>
+
+              )}
+
+            </tbody>
+
+          </table>
+
+        </div>
+
       </div>
+
     </div>
   );
 }

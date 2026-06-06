@@ -1,6 +1,9 @@
 import { useDispatch, useSelector } from "react-redux";
 import { logout } from "../store/store";
-import { FaSignOutAlt, FaUserCircle } from "react-icons/fa";
+import {
+  FaSignOutAlt,
+  FaUserCircle,
+} from "react-icons/fa";
 
 export default function Navbar() {
 
@@ -16,6 +19,8 @@ export default function Navbar() {
       bg-gradient-to-r
       from-blue-700
       to-indigo-700
+      dark:from-gray-800
+      dark:to-gray-900
       text-white
       px-6
       py-4
@@ -23,33 +28,55 @@ export default function Navbar() {
       flex
       justify-between
       items-center
+      transition-all
+      duration-300
       "
     >
 
       <div>
+
         <h1 className="font-bold text-2xl">
           Production Incentive Management System
         </h1>
 
-        <p className="text-sm text-blue-100">
+        <p
+          className="
+          text-sm
+          text-blue-100
+          dark:text-gray-300
+          "
+        >
           Industrial Workflow Management
         </p>
+
       </div>
 
       <div className="flex items-center gap-5">
 
         <div className="flex items-center gap-2">
+
           <FaUserCircle size={24} />
 
           <div>
+
             <p className="font-medium">
               {user?.name}
             </p>
 
-            <p className="text-xs text-blue-100">
-              {user?.role}
+            <p
+              className="
+              text-xs
+              text-blue-100
+              dark:text-gray-300
+              "
+            >
+              {user?.role
+                ?.replace("_", " ")
+                .toUpperCase()}
             </p>
+
           </div>
+
         </div>
 
         <button

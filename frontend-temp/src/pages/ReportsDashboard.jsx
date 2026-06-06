@@ -222,8 +222,7 @@ const machineData = {};
   ],
 };
   return (
-    <div>
-
+    <div className="text-gray-900 dark:text-white">
       {/* Header */}
 
       <div className="flex justify-between items-center mb-8">
@@ -235,6 +234,8 @@ const machineData = {};
           bg-gradient-to-r
           from-blue-700
           to-indigo-700
+          dark:from-blue-400
+          dark:to-indigo-400
           bg-clip-text
           text-transparent
           "
@@ -264,8 +265,17 @@ const machineData = {};
 
       <div className="grid md:grid-cols-4 gap-6">
 
-        <div className="bg-white rounded-2xl p-6 shadow-lg">
-          <h3 className="text-gray-500">
+<div
+  className="
+  bg-white
+  dark:bg-slate-800
+  rounded-2xl
+  p-6
+  shadow-lg
+  text-gray-900
+  dark:text-white
+  "
+>          <h3 className="text-gray-500 dark:text-gray-300">
             Total Entries
           </h3>
 
@@ -274,8 +284,17 @@ const machineData = {};
           </p>
         </div>
 
-        <div className="bg-white rounded-2xl p-6 shadow-lg">
-          <h3 className="text-gray-500">
+<div
+  className="
+  bg-white
+  dark:bg-slate-800
+  rounded-2xl
+  p-6
+  shadow-lg
+  text-gray-900
+  dark:text-white
+  "
+>        <h3 className="text-gray-500 dark:text-gray-300">
             Approved Entries
           </h3>
 
@@ -284,8 +303,18 @@ const machineData = {};
           </p>
         </div>
 
-        <div className="bg-white rounded-2xl p-6 shadow-lg">
-          <h3 className="text-gray-500">
+<div
+  className="
+  bg-white
+  dark:bg-slate-800
+  rounded-2xl
+  p-6
+  shadow-lg
+  text-gray-900
+  dark:text-white
+  "
+>
+           <h3 className="text-gray-500 dark:text-gray-300">
             Rejected Entries
           </h3>
 
@@ -294,8 +323,18 @@ const machineData = {};
           </p>
         </div>
 
-        <div className="bg-white rounded-2xl p-6 shadow-lg">
-          <h3 className="text-gray-500">
+<div
+  className="
+  bg-white
+  dark:bg-slate-800
+  rounded-2xl
+  p-6
+  shadow-lg
+  text-gray-900
+  dark:text-white
+  "
+>
+           <h3 className="text-gray-500 dark:text-gray-300">
             Total Incentive
           </h3>
 
@@ -310,8 +349,17 @@ const machineData = {};
 
       <div className="grid lg:grid-cols-2 gap-8 mt-10">
 
-        <div className="bg-white rounded-2xl shadow-lg p-6">
-
+<div
+  className="
+  bg-white
+  dark:bg-slate-800
+  rounded-2xl
+  shadow-lg
+  p-6
+  text-gray-900
+  dark:text-white
+  "
+>
           <h2 className="text-xl font-semibold mb-4">
             Approval Distribution
           </h2>
@@ -330,8 +378,17 @@ const machineData = {};
 
         </div>
 
-        <div className="bg-white rounded-2xl shadow-lg p-6">
-
+<div
+  className="
+  bg-white
+  dark:bg-slate-800
+  rounded-2xl
+  shadow-lg
+  p-6
+  text-gray-900
+  dark:text-white
+  "
+>
           <h2 className="text-xl font-semibold mb-4">
             Entry Statistics
           </h2>
@@ -354,15 +411,18 @@ const machineData = {};
 
       {/* Monthly Chart */}
 
+    
       <div
-        className="
-        bg-white
-        rounded-2xl
-        shadow-lg
-        p-6
-        mt-10
-        "
-      >
+  className="
+  bg-white
+  dark:bg-slate-800
+  rounded-2xl
+  shadow-lg
+  p-6
+  text-gray-900
+  dark:text-white
+  "
+>
 
         <h2 className="text-xl font-semibold mb-4">
           Monthly Production Entries
@@ -387,10 +447,13 @@ const machineData = {};
 <div
   className="
   bg-white
+  dark:bg-slate-800
   rounded-2xl
   shadow-lg
   p-6
   mt-10
+  text-gray-900
+  dark:text-white
   "
 >
 

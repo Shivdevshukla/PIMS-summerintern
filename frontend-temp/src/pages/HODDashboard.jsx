@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { toast } from "react-toastify";
+import Swal from "sweetalert2";
 import api from "../api";
 
 export default function HODDashboard() {
@@ -19,157 +21,274 @@ export default function HODDashboard() {
       setEntries(pendingEntries);
 
     } catch (err) {
+
       console.log(err);
+
+      toast.error(
+        "Failed to Load Entries"
+      );
     }
   };
 
   const approveEntry = async (entry) => {
+
+    const result = await Swal.fire({
+      title: "Approve Entry?",
+      text: "This entry will move to Superintendent.",
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonColor: "#16a34a",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Approve",
+    });
+
+    if (!result.isConfirmed) return;
+
     try {
+
       await api.put(
         `/approvals/hod/${entry.id}`,
         {
           action: "approve",
           remarks: "Approved by HOD",
-          production_quantity: entry.production_quantity
+          production_quantity:
+            entry.production_quantity,
         }
       );
 
-      alert("Entry Approved");
+      toast.success(
+        "Entry Approved By HOD"
+      );
 
       loadEntries();
 
     } catch (err) {
+
       console.log(err);
-      alert("Approval Failed");
+
+      toast.error(
+        "Approval Failed"
+      );
     }
   };
 
   const rejectEntry = async (entry) => {
+
+    const result = await Swal.fire({
+      title: "Reject Entry?",
+      text: "This entry will be rejected.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#dc2626",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Reject",
+    });
+
+    if (!result.isConfirmed) return;
+
     try {
+
       await api.put(
         `/approvals/hod/${entry.id}`,
         {
           action: "reject",
           remarks: "Rejected by HOD",
-          production_quantity: entry.production_quantity
+          production_quantity:
+            entry.production_quantity,
         }
       );
 
-      alert("Entry Rejected");
+      toast.error(
+        "Entry Rejected By HOD"
+      );
 
       loadEntries();
 
     } catch (err) {
+
       console.log(err);
-      alert("Rejection Failed");
+
+      toast.error(
+        "Rejection Failed"
+      );
     }
   };
 
   return (
     <div>
-      <h1 className="text-3xl font-bold mb-6">
-        HOD Dashboard
-      </h1>
 
-      <div className="bg-white rounded-xl shadow p-6">
+      <div className="mb-6">
 
-        <table className="w-full">
+        <h1 className="text-3xl font-bold text-gray-800">
+          HOD Dashboard
+        </h1>
 
-          <thead>
-            <tr className="border-b bg-gray-50">
+        <p className="text-gray-500 mt-1">
+          Review and approve production entries
+        </p>
 
-              <th className="p-3 text-left">
-                OC Number
-              </th>
+      </div>
 
-              <th className="p-3 text-left">
-                Worker
-              </th>
+      <div
+        className="
+        bg-white
+        rounded-2xl
+        shadow-lg
+        p-6
+        "
+      >
 
-              <th className="p-3 text-left">
-                Quantity
-              </th>
+        <div className="overflow-x-auto">
 
-              <th className="p-3 text-left">
-                Status
-              </th>
+          <table className="w-full">
 
-              <th className="p-3 text-left">
-                Action
-              </th>
+            <thead>
 
-            </tr>
-          </thead>
+              <tr className="bg-gray-100 border-b">
 
-          <tbody>
+                <th className="p-4 text-left">
+                  OC Number
+                </th>
 
-            {entries.length > 0 ? (
-              entries.map((entry) => (
-                <tr
-                  key={entry.id}
-                  className="border-b"
-                >
+                <th className="p-4 text-left">
+                  Worker
+                </th>
 
-                  <td className="p-3">
-                    {entry.oc_number}
-                  </td>
+                <th className="p-4 text-left">
+                  Quantity
+                </th>
 
-                  <td className="p-3">
-                    {entry.worker_name || entry.worker_id}
-                  </td>
+                <th className="p-4 text-left">
+                  Status
+                </th>
 
-                  <td className="p-3">
-                    {entry.production_quantity}
-                  </td>
+                <th className="p-4 text-left">
+                  Action
+                </th>
 
-                  <td className="p-3">
-                    {entry.status}
-                  </td>
+              </tr>
 
-                  <td className="p-3">
+            </thead>
 
-                    <div className="flex gap-2">
+            <tbody>
 
-                      <button
-                        onClick={() =>
-                          approveEntry(entry)
-                        }
-                        className="bg-green-600 text-white px-4 py-2 rounded"
+              {entries.length > 0 ? (
+
+                entries.map((entry) => (
+
+                  <tr
+                    key={entry.id}
+                    className="
+                    border-b
+                    hover:bg-blue-50
+                    transition
+                    "
+                  >
+
+                    <td className="p-4">
+                      {entry.oc_number}
+                    </td>
+
+                    <td className="p-4">
+                      {entry.worker_name ||
+                        entry.worker_id}
+                    </td>
+
+                    <td className="p-4">
+                      {entry.production_quantity}
+                    </td>
+
+                    <td className="p-4">
+
+                      <span
+                        className="
+                        bg-yellow-100
+                        text-yellow-700
+                        px-3
+                        py-1
+                        rounded-full
+                        text-sm
+                        font-medium
+                        "
                       >
-                        Approve
-                      </button>
+                        Pending HOD
+                      </span>
 
-                      <button
-                        onClick={() =>
-                          rejectEntry(entry)
-                        }
-                        className="bg-red-600 text-white px-4 py-2 rounded"
-                      >
-                        Reject
-                      </button>
+                    </td>
 
-                    </div>
+                    <td className="p-4">
 
+                      <div className="flex gap-2">
+
+                        <button
+                          onClick={() =>
+                            approveEntry(entry)
+                          }
+                          className="
+                          bg-green-600
+                          hover:bg-green-700
+                          text-white
+                          px-4
+                          py-2
+                          rounded-lg
+                          transition
+                          "
+                        >
+                          Approve
+                        </button>
+
+                        <button
+                          onClick={() =>
+                            rejectEntry(entry)
+                          }
+                          className="
+                          bg-red-600
+                          hover:bg-red-700
+                          text-white
+                          px-4
+                          py-2
+                          rounded-lg
+                          transition
+                          "
+                        >
+                          Reject
+                        </button>
+
+                      </div>
+
+                    </td>
+
+                  </tr>
+
+                ))
+
+              ) : (
+
+                <tr>
+
+                  <td
+                    colSpan="5"
+                    className="
+                    text-center
+                    p-10
+                    text-gray-500
+                    "
+                  >
+                    No Pending HOD Approvals
                   </td>
 
                 </tr>
-              ))
-            ) : (
-              <tr>
-                <td
-                  colSpan="5"
-                  className="text-center p-6 text-gray-500"
-                >
-                  No Pending HOD Approvals
-                </td>
-              </tr>
-            )}
 
-          </tbody>
+              )}
 
-        </table>
+            </tbody>
+
+          </table>
+
+        </div>
 
       </div>
+
     </div>
   );
 }

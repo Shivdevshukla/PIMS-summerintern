@@ -5,7 +5,9 @@ const verifyToken = require('../middleware/auth');
 const router = express.Router();
 
 
+// =========================
 // HOD APPROVAL
+// =========================
 router.put('/hod/:id', verifyToken, async (req, res) => {
 
   if (req.user.role !== 'hod') {
@@ -27,20 +29,47 @@ router.put('/hod/:id', verifyToken, async (req, res) => {
 
   try {
 
-    await db.query(
-      `UPDATE production_entries
-       SET
-         status = ?,
-         hod_remarks = ?,
-         production_quantity = ?
-       WHERE id = ?`,
-      [
-        newStatus,
-        remarks,
-        production_quantity,
-        req.params.id
-      ]
-    );
+    if (action === 'approve') {
+
+      await db.query(
+        `UPDATE production_entries
+         SET
+           status = ?,
+           hod_remarks = ?,
+           production_quantity = ?,
+           approved_by = ?,
+           approved_at = NOW()
+         WHERE id = ?`,
+        [
+          newStatus,
+          remarks,
+          production_quantity,
+          req.user.email,
+          req.params.id
+        ]
+      );
+
+    } else {
+
+      await db.query(
+        `UPDATE production_entries
+         SET
+           status = ?,
+           hod_remarks = ?,
+           production_quantity = ?,
+           rejected_by = ?,
+           rejected_at = NOW()
+         WHERE id = ?`,
+        [
+          newStatus,
+          remarks,
+          production_quantity,
+          req.user.email,
+          req.params.id
+        ]
+      );
+
+    }
 
     res.json({
       message: `Entry ${action}d by HOD`
@@ -55,7 +84,11 @@ router.put('/hod/:id', verifyToken, async (req, res) => {
   }
 
 });
+
+
+// =========================
 // SUPERINTENDENT APPROVAL
+// =========================
 router.put('/superintendent/:id', verifyToken, async (req, res) => {
 
   if (req.user.role !== 'superintendent') {
@@ -77,20 +110,47 @@ router.put('/superintendent/:id', verifyToken, async (req, res) => {
 
   try {
 
-    await db.query(
-      `UPDATE production_entries
-       SET
-         status = ?,
-         superintendent_remarks = ?,
-         production_quantity = ?
-       WHERE id = ?`,
-      [
-        newStatus,
-        remarks,
-        production_quantity,
-        req.params.id
-      ]
-    );
+    if (action === 'approve') {
+
+      await db.query(
+        `UPDATE production_entries
+         SET
+           status = ?,
+           superintendent_remarks = ?,
+           production_quantity = ?,
+           approved_by = ?,
+           approved_at = NOW()
+         WHERE id = ?`,
+        [
+          newStatus,
+          remarks,
+          production_quantity,
+          req.user.email,
+          req.params.id
+        ]
+      );
+
+    } else {
+
+      await db.query(
+        `UPDATE production_entries
+         SET
+           status = ?,
+           superintendent_remarks = ?,
+           production_quantity = ?,
+           rejected_by = ?,
+           rejected_at = NOW()
+         WHERE id = ?`,
+        [
+          newStatus,
+          remarks,
+          production_quantity,
+          req.user.email,
+          req.params.id
+        ]
+      );
+
+    }
 
     res.json({
       message: `Entry ${action}d by Superintendent`
@@ -106,7 +166,10 @@ router.put('/superintendent/:id', verifyToken, async (req, res) => {
 
 });
 
+
+// =========================
 // HR FINAL APPROVAL
+// =========================
 router.put('/hr/:id', verifyToken, async (req, res) => {
 
   if (req.user.role !== 'hr') {
@@ -128,20 +191,47 @@ router.put('/hr/:id', verifyToken, async (req, res) => {
 
   try {
 
-    await db.query(
-      `UPDATE production_entries
-       SET
-         status = ?,
-         hr_remarks = ?,
-         incentive_amount = ?
-       WHERE id = ?`,
-      [
-        newStatus,
-        remarks,
-        incentive_amount,
-        req.params.id
-      ]
-    );
+    if (action === 'approve') {
+
+      await db.query(
+        `UPDATE production_entries
+         SET
+           status = ?,
+           hr_remarks = ?,
+           incentive_amount = ?,
+           approved_by = ?,
+           approved_at = NOW()
+         WHERE id = ?`,
+        [
+          newStatus,
+          remarks,
+          incentive_amount,
+          req.user.email,
+          req.params.id
+        ]
+      );
+
+    } else {
+
+      await db.query(
+        `UPDATE production_entries
+         SET
+           status = ?,
+           hr_remarks = ?,
+           incentive_amount = ?,
+           rejected_by = ?,
+           rejected_at = NOW()
+         WHERE id = ?`,
+        [
+          newStatus,
+          remarks,
+          incentive_amount,
+          req.user.email,
+          req.params.id
+        ]
+      );
+
+    }
 
     res.json({
       message: `Entry ${action}d by HR`
