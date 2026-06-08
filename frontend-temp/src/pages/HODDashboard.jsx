@@ -119,32 +119,35 @@ export default function HODDashboard() {
 
       <div className="mb-6">
 
-        <h1 className="text-3xl font-bold text-gray-800">
-          HOD Dashboard
+<h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+            HOD Dashboard
         </h1>
 
-        <p className="text-gray-500 mt-1">
+        <p className="text-gray-500 dark:text-gray-400 mt-1">
           Review and approve production entries
         </p>
 
       </div>
 
       <div
-        className="
-        bg-white
-        rounded-2xl
-        shadow-lg
-        p-6
-        "
-      >
+  className="
+  bg-white
+  dark:bg-slate-800
+  rounded-2xl
+  shadow-lg
+  p-6
+  text-gray-900
+  dark:text-white
+  "
+>
 
         <div className="overflow-x-auto">
 
-          <table className="w-full">
+         <table className="w-full text-gray-900 dark:text-white">
 
             <thead>
 
-              <tr className="bg-gray-100 border-b">
+             <tr className="bg-gray-100 dark:bg-slate-700 border-b dark:border-slate-600">
 
                 <th className="p-4 text-left">
                   OC Number
@@ -178,11 +181,13 @@ export default function HODDashboard() {
 
                   <tr
                     key={entry.id}
-                    className="
-                    border-b
-                    hover:bg-blue-50
-                    transition
-                    "
+                   className="
+border-b
+dark:border-slate-700
+hover:bg-blue-50
+dark:hover:bg-slate-700
+transition
+"
                   >
 
                     <td className="p-4">
@@ -202,14 +207,16 @@ export default function HODDashboard() {
 
                       <span
                         className="
-                        bg-yellow-100
-                        text-yellow-700
-                        px-3
-                        py-1
-                        rounded-full
-                        text-sm
-                        font-medium
-                        "
+bg-yellow-100
+dark:bg-yellow-900/30
+text-yellow-700
+dark:text-yellow-300
+px-3
+py-1
+rounded-full
+text-sm
+font-medium
+"
                       >
                         Pending HOD
                       </span>
@@ -221,38 +228,42 @@ export default function HODDashboard() {
                       <div className="flex gap-2">
 
                         <button
-                          onClick={() =>
-                            approveEntry(entry)
-                          }
-                          className="
-                          bg-green-600
-                          hover:bg-green-700
-                          text-white
-                          px-4
-                          py-2
-                          rounded-lg
-                          transition
-                          "
-                        >
-                          Approve
-                        </button>
+  onClick={() =>
+    approveEntry(entry)
+  }
+  className="
+bg-green-600
+hover:bg-green-700
+dark:bg-green-500
+dark:hover:bg-green-600
+text-white
+px-4
+py-2
+rounded-lg
+transition
+"
+>
+  Approve
+</button>
 
                         <button
-                          onClick={() =>
-                            rejectEntry(entry)
-                          }
-                          className="
-                          bg-red-600
-                          hover:bg-red-700
-                          text-white
-                          px-4
-                          py-2
-                          rounded-lg
-                          transition
-                          "
-                        >
-                          Reject
-                        </button>
+  onClick={() =>
+    rejectEntry(entry)
+  }
+  className="
+bg-red-600
+hover:bg-red-700
+dark:bg-red-500
+dark:hover:bg-red-600
+text-white
+px-4
+py-2
+rounded-lg
+transition
+"
+>
+  Reject
+</button>
 
                       </div>
 
@@ -269,10 +280,11 @@ export default function HODDashboard() {
                   <td
                     colSpan="5"
                     className="
-                    text-center
-                    p-10
-                    text-gray-500
-                    "
+text-center
+p-10
+text-gray-500
+dark:text-gray-400
+"
                   >
                     No Pending HOD Approvals
                   </td>

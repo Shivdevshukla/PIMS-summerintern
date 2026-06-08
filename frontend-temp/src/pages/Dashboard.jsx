@@ -172,7 +172,7 @@ export default function Dashboard() {
           duration-300
           "
         >
-          <div className="flex items-center gap-2 text-gray-500">
+          <div className="flex items-center gap-2 text-gray-500dark:text-gray-300">
             <FaClock />
             <h3>Pending Approval</h3>
           </div>
@@ -223,7 +223,7 @@ export default function Dashboard() {
           duration-300
           "
         >
-          <div className="flex items-center gap-2 text-gray-500">
+          <div className="flex items-center gap-2 text-gray-500dark:text-gray-300">
             <FaMoneyBillWave />
             <h3>Total Incentive</h3>
           </div>

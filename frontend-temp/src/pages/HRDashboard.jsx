@@ -119,33 +119,34 @@ export default function HRDashboard() {
 
       <div className="mb-6">
 
-        <h1 className="text-3xl font-bold text-gray-800">
-          HR Dashboard
+<h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+            HR Dashboard
         </h1>
 
-        <p className="text-gray-500 mt-1">
-          Final approval and incentive verification
+<p className="text-gray-500 dark:text-gray-400 mt-1">
+            Final approval and incentive verification
         </p>
 
       </div>
 
       <div
-        className="
-        bg-white
-        rounded-2xl
-        shadow-lg
-        p-6
-        "
+  className="
+  bg-white
+  dark:bg-slate-800
+  rounded-2xl
+  shadow-lg
+  p-6
+  text-gray-900
+  dark:text-white
+  "
       >
 
         <div className="overflow-x-auto">
 
-          <table className="w-full">
-
+<table className="w-full text-gray-900 dark:text-white">
             <thead>
 
-              <tr className="bg-gray-100 border-b">
-
+<tr className="bg-gray-100 dark:bg-slate-700 border-b dark:border-slate-600">
                 <th className="p-4 text-left">
                   OC Number
                 </th>
@@ -179,10 +180,12 @@ export default function HRDashboard() {
                   <tr
                     key={entry.id}
                     className="
-                    border-b
-                    hover:bg-blue-50
-                    transition
-                    "
+border-b
+dark:border-slate-700
+hover:bg-blue-50
+dark:hover:bg-slate-700
+transition
+"
                   >
 
                     <td className="p-4">
@@ -200,15 +203,17 @@ export default function HRDashboard() {
                     <td className="p-4">
 
                       <span
-                        className="
-                        bg-purple-100
-                        text-purple-700
-                        px-3
-                        py-1
-                        rounded-full
-                        text-sm
-                        font-medium
-                        "
+                       className="
+bg-blue-100
+dark:bg-blue-900/30
+text-blue-700
+dark:text-blue-300
+px-3
+py-1
+rounded-full
+text-sm
+font-medium
+"
                       >
                         Pending HR
                       </span>
@@ -223,15 +228,17 @@ export default function HRDashboard() {
                           onClick={() =>
                             approveEntry(entry)
                           }
-                          className="
-                          bg-green-600
-                          hover:bg-green-700
-                          text-white
-                          px-4
-                          py-2
-                          rounded-lg
-                          transition
-                          "
+                        className="
+bg-green-600
+hover:bg-green-700
+dark:bg-green-500
+dark:hover:bg-green-600
+text-white
+px-4
+py-2
+rounded-lg
+transition
+"
                         >
                           Approve
                         </button>
@@ -240,15 +247,17 @@ export default function HRDashboard() {
                           onClick={() =>
                             rejectEntry(entry)
                           }
-                          className="
-                          bg-red-600
-                          hover:bg-red-700
-                          text-white
-                          px-4
-                          py-2
-                          rounded-lg
-                          transition
-                          "
+                         className="
+bg-red-600
+hover:bg-red-700
+dark:bg-red-500
+dark:hover:bg-red-600
+text-white
+px-4
+py-2
+rounded-lg
+transition
+"
                         >
                           Reject
                         </button>
@@ -268,10 +277,11 @@ export default function HRDashboard() {
                   <td
                     colSpan="5"
                     className="
-                    text-center
-                    p-10
-                    text-gray-500
-                    "
+text-center
+p-10
+text-gray-500
+dark:text-gray-400
+"
                   >
                     No Pending HR Approvals
                   </td>

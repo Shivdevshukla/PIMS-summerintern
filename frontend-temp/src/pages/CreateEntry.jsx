@@ -100,18 +100,26 @@ export default function CreateEntry() {
 
   return (
     <div>
-      <h1 className="text-3xl font-bold mb-6">
+      <h1 className="text-3xl font-bold mb-6text-gray-900 dark:text-white">
         Create Production Entry
       </h1>
 
       <form
-        onSubmit={submitEntry}
-        className="bg-white rounded-xl shadow p-6"
-      >
+  onSubmit={submitEntry}
+  className="
+  bg-white
+  dark:bg-slate-800
+  rounded-xl
+  shadow
+  p-6
+  text-gray-900
+  dark:text-white
+  "
+>
         <div className="grid grid-cols-2 gap-6">
 
           <div>
-            <label className="block mb-2">
+            <label className="block mb-2 text-gray-700 dark:text-gray-300">
               Worker
             </label>
 
@@ -119,7 +127,18 @@ export default function CreateEntry() {
               name="worker_id"
               value={form.worker_id}
               onChange={handleChange}
-              className="border p-3 rounded w-full"
+              className="
+border
+border-gray-300
+dark:border-slate-600
+bg-white
+dark:bg-slate-700
+text-gray-900
+dark:text-white
+p-3
+rounded
+w-full
+"
             >
               <option value="">
                 Select Worker
@@ -146,7 +165,18 @@ export default function CreateEntry() {
               name="oc_number"
               value={form.oc_number}
               onChange={handleChange}
-              className="border p-3 rounded w-full"
+              className="
+border
+border-gray-300
+dark:border-slate-600
+bg-white
+dark:bg-slate-700
+text-gray-900
+dark:text-white
+p-3
+rounded
+w-full
+"
             />
           </div>
 
@@ -160,7 +190,18 @@ export default function CreateEntry() {
               name="oc_stage"
               value={form.oc_stage}
               onChange={handleChange}
-              className="border p-3 rounded w-full"
+              className="
+border
+border-gray-300
+dark:border-slate-600
+bg-white
+dark:bg-slate-700
+text-gray-900
+dark:text-white
+p-3
+rounded
+w-full
+"
             />
           </div>
 
@@ -174,7 +215,18 @@ export default function CreateEntry() {
               name="machine_id"
               value={form.machine_id}
               onChange={handleChange}
-              className="border p-3 rounded w-full"
+              className="
+border
+border-gray-300
+dark:border-slate-600
+bg-white
+dark:bg-slate-700
+text-gray-900
+dark:text-white
+p-3
+rounded
+w-full
+"
             />
           </div>
 
@@ -187,7 +239,18 @@ export default function CreateEntry() {
               name="shift"
               value={form.shift}
               onChange={handleChange}
-              className="border p-3 rounded w-full"
+              className="
+border
+border-gray-300
+dark:border-slate-600
+bg-white
+dark:bg-slate-700
+text-gray-900
+dark:text-white
+p-3
+rounded
+w-full
+"
             >
               <option value="">
                 Select Shift
@@ -209,7 +272,18 @@ export default function CreateEntry() {
               name="production_quantity"
               value={form.production_quantity}
               onChange={handleChange}
-              className="border p-3 rounded w-full"
+              className="
+border
+border-gray-300
+dark:border-slate-600
+bg-white
+dark:bg-slate-700
+text-gray-900
+dark:text-white
+p-3
+rounded
+w-full
+"
             />
           </div>
 
@@ -223,7 +297,18 @@ export default function CreateEntry() {
               name="incentive_rate"
               value={form.incentive_rate}
               onChange={handleChange}
-              className="border p-3 rounded w-full"
+              className="
+border
+border-gray-300
+dark:border-slate-600
+bg-white
+dark:bg-slate-700
+text-gray-900
+dark:text-white
+p-3
+rounded
+w-full
+"
             />
           </div>
 
@@ -237,7 +322,18 @@ export default function CreateEntry() {
               readOnly
               name="incentive_amount"
               value={form.incentive_amount}
-              className="border p-3 rounded w-full bg-gray-100"
+              className="
+border
+border-gray-300
+dark:border-slate-600
+p-3
+rounded
+w-full
+bg-gray-100
+dark:bg-slate-700
+text-gray-900
+dark:text-white
+"
             />
           </div>
 
@@ -245,7 +341,16 @@ export default function CreateEntry() {
 
         <button
           type="submit"
-          className="mt-6 bg-blue-600 text-white px-6 py-3 rounded"
+         className="
+mt-6
+bg-blue-600
+hover:bg-blue-700
+text-white
+px-6
+py-3
+rounded-lg
+transition
+"
         >
           Submit Entry
         </button>
