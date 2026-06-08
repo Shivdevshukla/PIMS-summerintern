@@ -126,6 +126,40 @@ function UserManagement() {
     }
   };
 
+  const resetPassword = async (id) => {
+
+  const { value: password } = await Swal.fire({
+    title: "Reset Password",
+    input: "password",
+    inputLabel: "Enter New Password",
+    inputPlaceholder: "New Password",
+    showCancelButton: true,
+    confirmButtonText: "Reset",
+  });
+
+  if (!password) return;
+
+  try {
+
+    await api.put(
+      `/users/${id}/reset-password`,
+      { password }
+    );
+
+    toast.success(
+      "Password Reset Successfully"
+    );
+
+  } catch (err) {
+
+    toast.error(
+      err.response?.data?.error ||
+      "Failed to Reset Password"
+    );
+
+  }
+
+};
   return (
     <div className="p-6 text-gray-900 dark:text-white">
 
@@ -327,7 +361,7 @@ function UserManagement() {
                   Change Role
                 </th>
                 <th className="px-4 py-3 text-center">
-                  Action
+                  Actions
                 </th>
               </tr>
             </thead>
@@ -409,26 +443,49 @@ function UserManagement() {
                     </select>
                   </td>
 
-                  <td className="px-4 py-3 text-center">
-                    {user.role !== "admin" && (
-                      <button
-                        onClick={() =>
-                          deleteUser(user.id)
-                        }
-                        className="
-                        bg-red-500
-                        hover:bg-red-600
-                        text-white
-                        px-4
-                        py-2
-                        rounded-lg
-                        transition
-                        "
-                      >
-                        Delete
-                      </button>
-                    )}
-                  </td>
+                <td className="px-4 py-3 text-center">
+
+  <div className="flex gap-2 justify-center">
+
+    <button
+      onClick={() =>
+        resetPassword(user.id)
+      }
+      className="
+      bg-yellow-500
+      hover:bg-yellow-600
+      text-white
+      px-3
+      py-2
+      rounded-lg
+      transition
+      "
+    >
+      Reset Password
+    </button>
+
+    {user.role !== "admin" && (
+      <button
+        onClick={() =>
+          deleteUser(user.id)
+        }
+        className="
+        bg-red-500
+        hover:bg-red-600
+        text-white
+        px-3
+        py-2
+        rounded-lg
+        transition
+        "
+      >
+        Delete
+      </button>
+    )}
+
+  </div>
+
+</td>
                 </tr>
               ))}
             </tbody>

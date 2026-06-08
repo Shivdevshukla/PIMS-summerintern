@@ -12,10 +12,17 @@ router.get("/stats", verifyToken, async (req, res) => {
       "SELECT COUNT(*) AS count FROM production_entries"
     );
 
-    const [pending] = await db.query(
-      "SELECT COUNT(*) AS count FROM production_entries WHERE status!='approved'"
-    );
+    const [pendingHod] = await db.query(
+  "SELECT COUNT(*) AS count FROM production_entries WHERE status='pending_hod'"
+);
 
+const [pendingSuperintendent] = await db.query(
+  "SELECT COUNT(*) AS count FROM production_entries WHERE status='pending_superintendent'"
+);
+
+const [pendingHr] = await db.query(
+  "SELECT COUNT(*) AS count FROM production_entries WHERE status='pending_hr'"
+);
     const [approved] = await db.query(
       "SELECT COUNT(*) AS count FROM production_entries WHERE status='approved'"
     );
@@ -24,12 +31,14 @@ router.get("/stats", verifyToken, async (req, res) => {
       "SELECT COALESCE(SUM(incentive_amount),0) AS total FROM production_entries"
     );
 
-    res.json({
-      totalEntries: total[0].count,
-      pending: pending[0].count,
-      approved: approved[0].count,
-      totalIncentive: incentive[0].total,
-    });
+  res.json({
+  totalEntries: total[0].count,
+  pendingHod: pendingHod[0].count,
+  pendingSuperintendent: pendingSuperintendent[0].count,
+  pendingHr: pendingHr[0].count,
+  approved: approved[0].count,
+  totalIncentive: incentive[0].total,
+});
 
   } catch (err) {
     res.status(500).json({

@@ -17,15 +17,15 @@ router.get('/', verifyToken, async (req, res) => {
 
   try {
 
-    const [users] = await db.query(
-      `SELECT
-       id,
-       name,
-       email,
-       role,
-       created_at
-       FROM users`
-    );
+    const [users] = await db.query(`
+      SELECT
+      id,
+      name,
+      email,
+      role,
+      created_at
+      FROM users
+    `);
 
     res.json(users);
 
@@ -88,8 +88,67 @@ router.post('/', verifyToken, async (req, res) => {
 });
 
 
-// DELETE USER
-router.delete('/:id', verifyToken, async (req, res) => {
+// CHANGE OWN PASSWORD
+router.put('/change-password', verifyToken, async (req, res) => {
+
+  const { currentPassword, newPassword } = req.body;
+
+  try {
+
+    const [rows] = await db.query(
+      'SELECT * FROM users WHERE id = ?',
+      [req.user.id]
+    );
+
+    if (!rows.length) {
+      return res.status(404).json({
+        error: 'User Not Found'
+      });
+    }
+
+    const user = rows[0];
+
+    const match = await bcrypt.compare(
+      currentPassword,
+      user.password
+    );
+
+    if (!match) {
+      return res.status(400).json({
+        error: 'Current Password Incorrect'
+      });
+    }
+
+    const hashedPassword =
+      await bcrypt.hash(newPassword, 10);
+
+    await db.query(
+      `UPDATE users
+       SET password = ?
+       WHERE id = ?`,
+      [
+        hashedPassword,
+        req.user.id
+      ]
+    );
+
+    res.json({
+      message: 'Password Changed Successfully'
+    });
+
+  } catch (err) {
+
+    res.status(500).json({
+      error: err.message
+    });
+
+  }
+
+});
+
+
+// RESET USER PASSWORD (ADMIN ONLY)
+router.put('/:id/reset-password', verifyToken, async (req, res) => {
 
   if (req.user.role !== 'admin') {
     return res.status(403).json({
@@ -97,16 +156,25 @@ router.delete('/:id', verifyToken, async (req, res) => {
     });
   }
 
+  const { password } = req.body;
+
   try {
 
+    const hashedPassword =
+      await bcrypt.hash(password, 10);
+
     await db.query(
-      `DELETE FROM users
+      `UPDATE users
+       SET password = ?
        WHERE id = ?`,
-      [req.params.id]
+      [
+        hashedPassword,
+        req.params.id
+      ]
     );
 
     res.json({
-      message: 'User Deleted Successfully'
+      message: 'Password Reset Successfully'
     });
 
   } catch (err) {
@@ -145,6 +213,38 @@ router.put('/:id', verifyToken, async (req, res) => {
 
     res.json({
       message: 'Role Updated Successfully'
+    });
+
+  } catch (err) {
+
+    res.status(500).json({
+      error: err.message
+    });
+
+  }
+
+});
+
+
+// DELETE USER
+router.delete('/:id', verifyToken, async (req, res) => {
+
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({
+      error: 'Admin Access Only'
+    });
+  }
+
+  try {
+
+    await db.query(
+      `DELETE FROM users
+       WHERE id = ?`,
+      [req.params.id]
+    );
+
+    res.json({
+      message: 'User Deleted Successfully'
     });
 
   } catch (err) {

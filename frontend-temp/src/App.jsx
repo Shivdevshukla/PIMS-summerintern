@@ -14,6 +14,7 @@ import HRDashboard from "./pages/HRDashboard";
 import ReportsDashboard from "./pages/ReportsDashboard";
 import Workers from "./pages/Workers";
 import UserManagement from "./pages/UserManagement";
+import ChangePassword from "./pages/ChangePassword";
 
 function PrivateRoute({ children }) {
   const { token } = useSelector((state) => state.auth);
@@ -25,6 +26,7 @@ export default function App() {
   return (
     <>
       <Routes>
+
         <Route
           path="/login"
           element={<Login />}
@@ -77,7 +79,13 @@ export default function App() {
             path="users"
             element={<UserManagement />}
           />
+
+          <Route
+            path="change-password"
+            element={<ChangePassword />}
+          />
         </Route>
+
       </Routes>
 
       <ToastContainer

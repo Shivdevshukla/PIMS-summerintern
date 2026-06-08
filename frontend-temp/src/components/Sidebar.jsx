@@ -72,9 +72,23 @@ export default function Sidebar() {
 
       <div className="p-3 space-y-2">
 
-        <NavLink to="/" className={navClass}>
+        <NavLink
+          to="/"
+          className={navClass}
+        >
           Dashboard
         </NavLink>
+
+        {/* NEW CHANGE PASSWORD LINK */}
+
+        {user?.role !== "admin" && (
+  <NavLink
+    to="/change-password"
+    className={navClass}
+  >
+    Change Password
+  </NavLink>
+)}
 
         {user?.role === "shift_incharge" && (
           <NavLink

@@ -16,11 +16,13 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
 
   const [stats, setStats] = useState({
-    totalEntries: 0,
-    pending: 0,
-    approved: 0,
-    totalIncentive: 0,
-  });
+  totalEntries: 0,
+  pendingHod: 0,
+  pendingSuperintendent: 0,
+  pendingHr: 0,
+  approved: 0,
+  totalIncentive: 0,
+});
 
   const [entries, setEntries] = useState([]);
 
@@ -177,9 +179,11 @@ export default function Dashboard() {
             <h3>Pending Approval</h3>
           </div>
 
-          <p className="text-4xl font-bold text-yellow-600 mt-3">
-            {stats.pending}
-          </p>
+         <p className="text-4xl font-bold text-yellow-600 mt-3">
+  {stats.pendingHod +
+    stats.pendingSuperintendent +
+    stats.pendingHr}
+</p>
         </div>
 
         {/* Approved */}
@@ -236,10 +240,9 @@ export default function Dashboard() {
       </div>
 
       {/* Approval Workflow */}
-
 <div
   className="
-  bg-white dark:bg-slate-800
+  bg-white
   dark:bg-slate-800
   rounded-2xl
   shadow-lg
@@ -248,43 +251,124 @@ export default function Dashboard() {
   dark:text-white
   "
 >
-        <h2 className="text-xl font-semibold mb-6">
-          Approval Workflow
-        </h2>
+  <h2 className="text-xl font-semibold mb-6">
+    Approval Workflow
+  </h2>
 
-        <div className="flex items-center justify-between">
+  <div className="flex flex-wrap md:flex-nowrap items-center justify-between gap-4">
 
-          <div className="text-center">
-            <div className="w-14 h-14 rounded-full bg-blue-500 mx-auto"></div>
-            <p className="mt-2 font-medium">Submitted</p>
-          </div>
-
-          <div className="text-2xl">➜</div>
-
-          <div className="text-center">
-            <div className="w-14 h-14 rounded-full bg-yellow-500 mx-auto"></div>
-            <p className="mt-2 font-medium">HOD</p>
-          </div>
-
-          <div className="text-2xl">➜</div>
-
-          <div className="text-center">
-            <div className="w-14 h-14 rounded-full bg-purple-500 mx-auto"></div>
-            <p className="mt-2 font-medium">
-              Superintendent
-            </p>
-          </div>
-
-          <div className="text-2xl">➜</div>
-
-          <div className="text-center">
-            <div className="w-14 h-14 rounded-full bg-green-500 mx-auto"></div>
-            <p className="mt-2 font-medium">HR</p>
-          </div>
-
-        </div>
-
+    {/* Submitted */}
+    <div className="flex flex-col items-center">
+      <div className="w-14 h-14 rounded-full bg-green-500 text-white flex items-center justify-center text-xl">
+        ✓
       </div>
+      <p className="mt-2 font-medium">Submitted</p>
+    </div>
+
+    <div className="flex-1 h-1 bg-green-500 hidden md:block"></div>
+
+    {/* HOD */}
+    <div className="flex flex-col items-center">
+      <div
+  className={`
+    w-14 h-14 rounded-full flex items-center justify-center text-white text-xl
+    ${
+      stats.pendingHod > 0
+        ? "bg-yellow-500 animate-pulse"
+        : "bg-green-500"
+    }
+  `}
+>
+  {stats.pendingHod > 0 ? "⏳" : "✓"}
+</div>
+
+      <p className="mt-2 font-medium">HOD</p>
+
+      <span className="text-xs text-gray-500">
+  {stats.pendingHod > 0
+    ? "Waiting"
+    : "Approved"}
+</span>
+    </div>
+
+    <div className="flex-1 h-1 bg-gray-300 hidden md:block"></div>
+
+    {/* Superintendent */}
+    <div className="flex flex-col items-center">
+
+  <div
+    className={`
+      w-14 h-14 rounded-full
+      flex items-center justify-center
+      text-white text-xl
+      ${
+        stats.pendingSuperintendent > 0
+          ? "bg-yellow-500 animate-pulse"
+          : "bg-green-500"
+      }
+    `}
+  >
+    {
+      stats.pendingSuperintendent > 0
+        ? "⏳"
+        : "✓"
+    }
+  </div>
+
+  <p className="mt-2 font-medium">
+    Superintendent
+  </p>
+
+  <span className="text-xs text-gray-500">
+    {
+      stats.pendingSuperintendent > 0
+        ? "Waiting"
+        : "Approved"
+    }
+  </span>
+
+</div>
+
+    <div className="flex-1 h-1 bg-gray-300 hidden md:block"></div>
+
+    {/* HR */}
+<div className="flex flex-col items-center">
+
+  <div
+    className={`
+      w-14 h-14 rounded-full
+      flex items-center justify-center
+      text-white text-xl
+      ${
+        stats.pendingHr > 0
+          ? "bg-yellow-500 animate-pulse"
+          : "bg-green-500"
+      }
+    `}
+  >
+    {
+      stats.pendingHr > 0
+        ? "⏳"
+        : "✓"
+    }
+  </div>
+
+  <p className="mt-2 font-medium">
+    HR
+  </p>
+
+  <span className="text-xs text-gray-500">
+    {
+      stats.pendingHr > 0
+        ? "Waiting"
+        : "Approved"
+    }
+  </span>
+
+</div>
+
+  </div>
+</div>
 
       {/* Recent Entries */}
 
