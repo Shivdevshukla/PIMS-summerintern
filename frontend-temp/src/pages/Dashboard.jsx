@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import api from "../api";
+import { SkeletonCard, SkeletonTable } from "../components/Skeleton"; 
 import {
   FaClipboardList,
   FaClock,
@@ -107,11 +108,27 @@ export default function Dashboard() {
     totalIncentive: 0,
   });
   const [entries, setEntries] = useState([]);
+   const [dateFilter, setDateFilter] = useState("today");
+  const [customFrom, setCustomFrom] = useState("");
+  const [customTo, setCustomTo] = useState("");
+  const getDateRange = () => {
+    const today = new Date().toISOString().split("T")[0];
+    const weekAgo = new Date(Date.now() - 7*24*60*60*1000).toISOString().split("T")[0];
+    const monthAgo = new Date(Date.now() - 30*24*60*60*1000).toISOString().split("T")[0];
+    const map = {
+      today: [today, today],
+      week: [weekAgo, today],
+      month: [monthAgo, today],
+      all: ["", ""]
+    };
+    return map[dateFilter] || [customFrom, customTo];
+  };
   const [filterStatus, setFilterStatus] = useState("all");
 
-  useEffect(() => {
-    loadAll();
-  }, []);
+useEffect(() => {
+  loadStats();
+  loadRecentEntries();
+}, [dateFilter, customFrom, customTo]); // ← ADD dateFilter, customFrom, customTo
 
   const loadAll = async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
@@ -129,15 +146,14 @@ export default function Dashboard() {
     }
   };
 
-  const loadRecentEntries = async () => {
-    try {
-      const res = await api.get("/dashboard/recent");
-      setEntries(res.data);
-    } catch (err) {
-      console.error("Entries error:", err);
-    }
-  };
-
+ const loadRecentEntries = async () => {
+  try {
+    const [from, to] = getDateRange();
+    const params = from && to ? `?from=${from}&to=${to}` : "";
+    const r = await api.get(`/dashboard/recent${params}`);
+    setEntries(r.data);
+  } catch(e) {}
+};
   const totalPending = stats.pendingHod + stats.pendingSuperintendent + stats.pendingHr;
 
   const filteredEntries =
@@ -145,16 +161,14 @@ export default function Dashboard() {
       ? entries
       : entries.filter((e) => e.status === filterStatus);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="text-center">
-          <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-          <p className="text-gray-500 dark:text-gray-400">Loading dashboard…</p>
-        </div>
-      </div>
-    );
-  }
+  if (loading) return (
+  <div>
+    <div className="grid grid-cols-4 gap-4 mb-6">
+      {[1,2,3,4].map(i => <SkeletonCard key={i}/>)}
+    </div>
+    <SkeletonTable rows={6} cols={8}/>
+  </div>
+);
 
   return (
     <div className="space-y-6">
@@ -190,6 +204,35 @@ export default function Dashboard() {
         </div>
       </div>
 
+{/* ← ADD THE FILTER BAR HERE, between header and welcome banner */}
+    <div className="flex items-center gap-2 flex-wrap mb-6">
+      {[["today","Today"],["week","This Week"],["month","This Month"],["all","All Time"]].map(([v,l]) => (
+        <button key={v} onClick={() => setDateFilter(v)}
+          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors
+            ${dateFilter === v
+              ? "bg-blue-700 text-white"
+              : "bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 text-gray-600 dark:text-gray-300 hover:border-blue-300"}`}>
+          {l}
+        </button>
+      ))}
+      <button onClick={() => setDateFilter("custom")}
+        className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors
+          ${dateFilter === "custom"
+            ? "bg-blue-700 text-white border-blue-700"
+            : "bg-white dark:bg-slate-700 border-gray-200 dark:border-slate-600 text-gray-600 dark:text-gray-300"}`}>
+        Custom Range
+      </button>
+      {dateFilter === "custom" && (
+        <div className="flex items-center gap-2">
+          <input type="date" value={customFrom} onChange={e => setCustomFrom(e.target.value)}
+            className="border rounded-lg px-2 py-1 text-xs dark:bg-slate-700 dark:border-slate-600 dark:text-white outline-none"/>
+          <span className="text-gray-400 text-xs">to</span>
+          <input type="date" value={customTo} onChange={e => setCustomTo(e.target.value)}
+            className="border rounded-lg px-2 py-1 text-xs dark:bg-slate-700 dark:border-slate-600 dark:text-white outline-none"/>
+        </div>
+      )}
+    </div>
+    
       {/* ── Welcome Banner ── */}
       <div className="bg-gradient-to-r from-blue-700 to-indigo-700 text-white rounded-2xl p-5 shadow-lg">
         <div className="flex items-center gap-4">

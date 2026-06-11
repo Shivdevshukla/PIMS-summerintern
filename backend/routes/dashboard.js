@@ -50,20 +50,21 @@ const [pendingHr] = await db.query(
 // Recent Entries
 router.get("/recent", verifyToken, async (req, res) => {
   try {
+    const { from, to } = req.query;
+    let query = `SELECT * FROM production_entries`;
+    const params = [];
 
-    const [rows] = await db.query(`
-      SELECT *
-      FROM production_entries
-      ORDER BY created_at DESC
-      LIMIT 10
-    `);
+    if (from && to) {
+      query += ` WHERE DATE(created_at) BETWEEN ? AND ?`;
+      params.push(from, to);
+    }
 
+    query += ` ORDER BY created_at DESC LIMIT 10`;
+
+    const [rows] = await db.query(query, params);
     res.json(rows);
-
   } catch (err) {
-    res.status(500).json({
-      error: err.message,
-    });
+    res.status(500).json({ error: err.message });
   }
 });
 
