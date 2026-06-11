@@ -18,8 +18,22 @@ import ChangePassword from "./pages/ChangePassword";
 
 function PrivateRoute({ children }) {
   const { token } = useSelector((state) => state.auth);
+  return token ? children : <Navigate to="/login" replace />;
+}
 
-  return token ? children : <Navigate to="/login" />;
+function RoleRoute({ children, allowedRoles }) {
+  const { token, user } = useSelector((s) => s.auth);
+  if (!token) return <Navigate to="/login" replace />;
+  if (!allowedRoles.includes(user?.role)) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64">
+        <div className="text-5xl mb-4">🔒</div>
+        <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-2">Access Denied</h2>
+        <p className="text-gray-500">You don't have permission to view this page.</p>
+      </div>
+    );
+  }
+  return children;
 }
 
 export default function App() {
@@ -27,10 +41,7 @@ export default function App() {
     <>
       <Routes>
 
-        <Route
-          path="/login"
-          element={<Login />}
-        />
+        <Route path="/login" element={<Login />} />
 
         <Route
           path="/"
@@ -40,50 +51,72 @@ export default function App() {
             </PrivateRoute>
           }
         >
-          <Route
-            index
-            element={<Dashboard />}
-          />
+          <Route index element={<Dashboard />} />
 
           <Route
             path="create-entry"
-            element={<CreateEntry />}
+            element={
+              <RoleRoute allowedRoles={["shift_incharge", "admin"]}>
+                <CreateEntry />
+              </RoleRoute>
+            }
           />
 
           <Route
             path="hod-dashboard"
-            element={<HODDashboard />}
+            element={
+              <RoleRoute allowedRoles={["hod", "admin"]}>
+                <HODDashboard />
+              </RoleRoute>
+            }
           />
 
           <Route
             path="superintendent-dashboard"
-            element={<SuperintendentDashboard />}
+            element={
+              <RoleRoute allowedRoles={["superintendent", "admin"]}>
+                <SuperintendentDashboard />
+              </RoleRoute>
+            }
           />
 
           <Route
             path="hr-dashboard"
-            element={<HRDashboard />}
+            element={
+              <RoleRoute allowedRoles={["hr", "admin"]}>
+                <HRDashboard />
+              </RoleRoute>
+            }
           />
 
           <Route
             path="reports-dashboard"
-            element={<ReportsDashboard />}
+            element={
+              <RoleRoute allowedRoles={["hr", "superintendent", "hod", "admin"]}>
+                <ReportsDashboard />
+              </RoleRoute>
+            }
           />
 
           <Route
             path="workers"
-            element={<Workers />}
+            element={
+              <RoleRoute allowedRoles={["admin"]}>
+                <Workers />
+              </RoleRoute>
+            }
           />
 
           <Route
             path="users"
-            element={<UserManagement />}
+            element={
+              <RoleRoute allowedRoles={["admin"]}>
+                <UserManagement />
+              </RoleRoute>
+            }
           />
 
-          <Route
-            path="change-password"
-            element={<ChangePassword />}
-          />
+          <Route path="change-password" element={<ChangePassword />} />
         </Route>
 
       </Routes>

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import api from "../api";
-import { SkeletonCard, SkeletonTable } from "../components/Skeleton"; 
+import { SkeletonCard, SkeletonTable } from "../components/Skeleton";
 import {
   FaClipboardList,
   FaClock,
@@ -11,9 +11,8 @@ import {
   FaUserCircle,
   FaPlus,
   FaHourglassHalf,
-  FaTimesCircle,
-  FaChevronRight,
   FaSyncAlt,
+  FaChevronRight,
 } from "react-icons/fa";
 
 const STATUS_CONFIG = {
@@ -69,7 +68,7 @@ function StatCard({ icon: Icon, label, value, color, subLabel }) {
   );
 }
 
-function WorkflowStep({ label, status, count }) {
+function WorkflowStep({ label, count }) {
   const isDone = count === 0;
   return (
     <div className="flex flex-col items-center gap-1.5 min-w-[70px]">
@@ -108,33 +107,22 @@ export default function Dashboard() {
     totalIncentive: 0,
   });
   const [entries, setEntries] = useState([]);
-   const [dateFilter, setDateFilter] = useState("today");
+  const [dateFilter, setDateFilter] = useState("today");
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
+  const [filterStatus, setFilterStatus] = useState("all");
+
   const getDateRange = () => {
     const today = new Date().toISOString().split("T")[0];
-    const weekAgo = new Date(Date.now() - 7*24*60*60*1000).toISOString().split("T")[0];
-    const monthAgo = new Date(Date.now() - 30*24*60*60*1000).toISOString().split("T")[0];
+    const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+    const monthAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
     const map = {
       today: [today, today],
       week: [weekAgo, today],
       month: [monthAgo, today],
-      all: ["", ""]
+      all: ["", ""],
     };
     return map[dateFilter] || [customFrom, customTo];
-  };
-  const [filterStatus, setFilterStatus] = useState("all");
-
-useEffect(() => {
-  loadStats();
-  loadRecentEntries();
-}, [dateFilter, customFrom, customTo]); // ← ADD dateFilter, customFrom, customTo
-
-  const loadAll = async (isRefresh = false) => {
-    if (isRefresh) setRefreshing(true);
-    await Promise.all([loadStats(), loadRecentEntries()]);
-    setLoading(false);
-    setRefreshing(false);
   };
 
   const loadStats = async () => {
@@ -146,14 +134,36 @@ useEffect(() => {
     }
   };
 
- const loadRecentEntries = async () => {
-  try {
-    const [from, to] = getDateRange();
-    const params = from && to ? `?from=${from}&to=${to}` : "";
-    const r = await api.get(`/dashboard/recent${params}`);
-    setEntries(r.data);
-  } catch(e) {}
-};
+  const loadRecentEntries = async () => {
+    try {
+      const [from, to] = getDateRange();
+      const params = from && to ? `?from=${from}&to=${to}` : "";
+      const r = await api.get(`/dashboard/recent${params}`);
+      setEntries(r.data);
+    } catch (err) {
+      console.error("Entries error:", err);
+    }
+  };
+
+  // ✅ FIX: Single useEffect that loads everything and always clears loading state
+  useEffect(() => {
+    let cancelled = false;
+    const loadAll = async () => {
+      if (!cancelled) setLoading(true);
+      await Promise.all([loadStats(), loadRecentEntries()]);
+      if (!cancelled) setLoading(false);
+    };
+    loadAll();
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dateFilter, customFrom, customTo]);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await Promise.all([loadStats(), loadRecentEntries()]);
+    setRefreshing(false);
+  };
+
   const totalPending = stats.pendingHod + stats.pendingSuperintendent + stats.pendingHr;
 
   const filteredEntries =
@@ -161,14 +171,15 @@ useEffect(() => {
       ? entries
       : entries.filter((e) => e.status === filterStatus);
 
-  if (loading) return (
-  <div>
-    <div className="grid grid-cols-4 gap-4 mb-6">
-      {[1,2,3,4].map(i => <SkeletonCard key={i}/>)}
-    </div>
-    <SkeletonTable rows={6} cols={8}/>
-  </div>
-);
+  if (loading)
+    return (
+      <div className="space-y-4 p-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          {[1, 2, 3, 4].map((i) => <SkeletonCard key={i} />)}
+        </div>
+        <SkeletonTable rows={6} cols={6} />
+      </div>
+    );
 
   return (
     <div className="space-y-6">
@@ -186,7 +197,7 @@ useEffect(() => {
 
         <div className="flex gap-2">
           <button
-            onClick={() => loadAll(true)}
+            onClick={handleRefresh}
             disabled={refreshing}
             className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-slate-700 rounded-xl shadow-sm hover:bg-gray-50 dark:hover:bg-slate-700 transition-all text-sm font-medium"
           >
@@ -204,35 +215,48 @@ useEffect(() => {
         </div>
       </div>
 
-{/* ← ADD THE FILTER BAR HERE, between header and welcome banner */}
-    <div className="flex items-center gap-2 flex-wrap mb-6">
-      {[["today","Today"],["week","This Week"],["month","This Month"],["all","All Time"]].map(([v,l]) => (
-        <button key={v} onClick={() => setDateFilter(v)}
-          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors
-            ${dateFilter === v
-              ? "bg-blue-700 text-white"
-              : "bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 text-gray-600 dark:text-gray-300 hover:border-blue-300"}`}>
-          {l}
+      {/* ── Date Filter Bar ── */}
+      <div className="flex items-center gap-2 flex-wrap">
+        {[["today", "Today"], ["week", "This Week"], ["month", "This Month"], ["all", "All Time"]].map(([v, l]) => (
+          <button
+            key={v}
+            onClick={() => setDateFilter(v)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors
+              ${dateFilter === v
+                ? "bg-blue-700 text-white"
+                : "bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 text-gray-600 dark:text-gray-300 hover:border-blue-300"}`}
+          >
+            {l}
+          </button>
+        ))}
+        <button
+          onClick={() => setDateFilter("custom")}
+          className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors
+            ${dateFilter === "custom"
+              ? "bg-blue-700 text-white border-blue-700"
+              : "bg-white dark:bg-slate-700 border-gray-200 dark:border-slate-600 text-gray-600 dark:text-gray-300"}`}
+        >
+          Custom Range
         </button>
-      ))}
-      <button onClick={() => setDateFilter("custom")}
-        className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors
-          ${dateFilter === "custom"
-            ? "bg-blue-700 text-white border-blue-700"
-            : "bg-white dark:bg-slate-700 border-gray-200 dark:border-slate-600 text-gray-600 dark:text-gray-300"}`}>
-        Custom Range
-      </button>
-      {dateFilter === "custom" && (
-        <div className="flex items-center gap-2">
-          <input type="date" value={customFrom} onChange={e => setCustomFrom(e.target.value)}
-            className="border rounded-lg px-2 py-1 text-xs dark:bg-slate-700 dark:border-slate-600 dark:text-white outline-none"/>
-          <span className="text-gray-400 text-xs">to</span>
-          <input type="date" value={customTo} onChange={e => setCustomTo(e.target.value)}
-            className="border rounded-lg px-2 py-1 text-xs dark:bg-slate-700 dark:border-slate-600 dark:text-white outline-none"/>
-        </div>
-      )}
-    </div>
-    
+        {dateFilter === "custom" && (
+          <div className="flex items-center gap-2">
+            <input
+              type="date"
+              value={customFrom}
+              onChange={(e) => setCustomFrom(e.target.value)}
+              className="border rounded-lg px-2 py-1 text-xs dark:bg-slate-700 dark:border-slate-600 dark:text-white outline-none"
+            />
+            <span className="text-gray-400 text-xs">to</span>
+            <input
+              type="date"
+              value={customTo}
+              onChange={(e) => setCustomTo(e.target.value)}
+              className="border rounded-lg px-2 py-1 text-xs dark:bg-slate-700 dark:border-slate-600 dark:text-white outline-none"
+            />
+          </div>
+        )}
+      </div>
+
       {/* ── Welcome Banner ── */}
       <div className="bg-gradient-to-r from-blue-700 to-indigo-700 text-white rounded-2xl p-5 shadow-lg">
         <div className="flex items-center gap-4">
@@ -242,7 +266,12 @@ useEffect(() => {
           <div className="flex-1">
             <h2 className="text-xl font-bold">Welcome back, {user?.name}</h2>
             <p className="text-blue-100 text-sm mt-0.5">
-              {user?.role?.replace("_", " ")} &nbsp;·&nbsp; {new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" })}
+              {user?.role?.replace("_", " ")} &nbsp;·&nbsp;{" "}
+              {new Date().toLocaleDateString("en-IN", {
+                weekday: "long",
+                day: "numeric",
+                month: "long",
+              })}
             </p>
           </div>
           {totalPending > 0 && (
@@ -255,27 +284,9 @@ useEffect(() => {
 
       {/* ── Stats Grid ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard
-          icon={FaClipboardList}
-          label="Total Entries"
-          value={stats.totalEntries}
-          color="text-blue-600"
-          subLabel="All time"
-        />
-        <StatCard
-          icon={FaHourglassHalf}
-          label="In Pipeline"
-          value={totalPending}
-          color="text-yellow-600"
-          subLabel="Awaiting approval"
-        />
-        <StatCard
-          icon={FaCheckCircle}
-          label="Approved"
-          value={stats.approved}
-          color="text-green-600"
-          subLabel="Fully processed"
-        />
+        <StatCard icon={FaClipboardList} label="Total Entries" value={stats.totalEntries} color="text-blue-600" subLabel="All time" />
+        <StatCard icon={FaHourglassHalf} label="In Pipeline" value={totalPending} color="text-yellow-600" subLabel="Awaiting approval" />
+        <StatCard icon={FaCheckCircle} label="Approved" value={stats.approved} color="text-green-600" subLabel="Fully processed" />
         <StatCard
           icon={FaMoneyBillWave}
           label="Total Incentive"
@@ -308,7 +319,7 @@ useEffect(() => {
       <div className="bg-white dark:bg-slate-800 rounded-2xl shadow p-6">
         <h2 className="text-base font-semibold text-gray-800 dark:text-white mb-5">Approval Workflow</h2>
         <div className="flex items-center justify-between gap-2">
-          <WorkflowStep label="Submitted" status="done" count={0} />
+          <WorkflowStep label="Submitted" count={0} />
           <WorkflowConnector done={stats.pendingHod === 0} />
           <WorkflowStep label="HOD" count={stats.pendingHod} />
           <WorkflowConnector done={stats.pendingHod === 0 && stats.pendingSuperintendent === 0} />
@@ -325,7 +336,6 @@ useEffect(() => {
         <div className="flex items-center justify-between p-5 border-b border-gray-100 dark:border-slate-700 flex-wrap gap-3">
           <h2 className="text-base font-semibold text-gray-800 dark:text-white">Recent Production Entries</h2>
 
-          {/* Status filter tabs */}
           <div className="flex gap-1 text-xs font-medium bg-gray-100 dark:bg-slate-700 p-1 rounded-xl">
             {["all", "pending_hod", "approved"].map((s) => (
               <button
@@ -384,7 +394,9 @@ useEffect(() => {
                       </td>
                       <td className="px-5 py-3.5 text-gray-500 dark:text-gray-400 text-xs">
                         {new Date(entry.created_at).toLocaleDateString("en-IN", {
-                          day: "2-digit", month: "short", year: "numeric",
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
                         })}
                       </td>
                     </tr>
