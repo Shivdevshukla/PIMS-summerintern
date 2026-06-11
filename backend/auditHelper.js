@@ -1,4 +1,4 @@
-const db = require('../db');
+const db = require('./db');
 
 // ─── Role → next approver role mapping ───────────────────────────────────────
 const NEXT_ROLE = {

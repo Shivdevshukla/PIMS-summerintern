@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import api from "../api";
-import { SkeletonCard, SkeletonTable } from "../components/Skeleton";
+import { SkeletonStatCard, SkeletonTable } from "../components/Skeleton";
 import {
   FaClipboardList,
   FaClock,
@@ -175,7 +175,7 @@ export default function Dashboard() {
     return (
       <div className="space-y-4 p-6">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          {[1, 2, 3, 4].map((i) => <SkeletonCard key={i} />)}
+          {[1, 2, 3, 4].map((i) => <SkeletonStatCard key={i} />)}
         </div>
         <SkeletonTable rows={6} cols={6} />
       </div>
