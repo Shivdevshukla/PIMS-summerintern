@@ -4,43 +4,28 @@ import { useSelector } from "react-redux";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-import Login from "./pages/Login";
-import Dashboard from "./pages/Dashboard";
-import CreateEntry from "./pages/CreateEntry";
-import Layout from "./components/Layout";
-import HODDashboard from "./pages/HODDashboard";
+import Login                  from "./pages/Login";
+import Dashboard              from "./pages/Dashboard";
+import CreateEntry            from "./pages/CreateEntry";
+import Layout                 from "./components/Layout";
+import HODDashboard           from "./pages/HODDashboard";
 import SuperintendentDashboard from "./pages/SuperintendentDashboard";
-import HRDashboard from "./pages/HRDashboard";
-import ReportsDashboard from "./pages/ReportsDashboard";
-import Workers from "./pages/Workers";
-import UserManagement from "./pages/UserManagement";
-import ChangePassword from "./pages/ChangePassword";
+import HRDashboard            from "./pages/HRDashboard";
+import ReportsDashboard       from "./pages/ReportsDashboard";
+import Workers                from "./pages/Workers";
+import UserManagement         from "./pages/UserManagement";
+import ChangePassword         from "./pages/ChangePassword";
+import ActivityLog            from "./pages/ActivityLog"; // NEW
 
 function PrivateRoute({ children }) {
   const { token } = useSelector((state) => state.auth);
-  return token ? children : <Navigate to="/login" replace />;
-}
-
-function RoleRoute({ children, allowedRoles }) {
-  const { token, user } = useSelector((s) => s.auth);
-  if (!token) return <Navigate to="/login" replace />;
-  if (!allowedRoles.includes(user?.role)) {
-    return (
-      <div className="flex flex-col items-center justify-center h-64">
-        <div className="text-5xl mb-4">🔒</div>
-        <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-2">Access Denied</h2>
-        <p className="text-gray-500">You don't have permission to view this page.</p>
-      </div>
-    );
-  }
-  return children;
+  return token ? children : <Navigate to="/login" />;
 }
 
 export default function App() {
   return (
     <>
       <Routes>
-
         <Route path="/login" element={<Login />} />
 
         <Route
@@ -51,74 +36,17 @@ export default function App() {
             </PrivateRoute>
           }
         >
-          <Route index element={<Dashboard />} />
-
-          <Route
-            path="create-entry"
-            element={
-              <RoleRoute allowedRoles={["shift_incharge", "admin"]}>
-                <CreateEntry />
-              </RoleRoute>
-            }
-          />
-
-          <Route
-            path="hod-dashboard"
-            element={
-              <RoleRoute allowedRoles={["hod", "admin"]}>
-                <HODDashboard />
-              </RoleRoute>
-            }
-          />
-
-          <Route
-            path="superintendent-dashboard"
-            element={
-              <RoleRoute allowedRoles={["superintendent", "admin"]}>
-                <SuperintendentDashboard />
-              </RoleRoute>
-            }
-          />
-
-          <Route
-            path="hr-dashboard"
-            element={
-              <RoleRoute allowedRoles={["hr", "admin"]}>
-                <HRDashboard />
-              </RoleRoute>
-            }
-          />
-
-          <Route
-            path="reports-dashboard"
-            element={
-              <RoleRoute allowedRoles={["hr", "superintendent", "hod", "admin"]}>
-                <ReportsDashboard />
-              </RoleRoute>
-            }
-          />
-
-          <Route
-            path="workers"
-            element={
-              <RoleRoute allowedRoles={["admin"]}>
-                <Workers />
-              </RoleRoute>
-            }
-          />
-
-          <Route
-            path="users"
-            element={
-              <RoleRoute allowedRoles={["admin"]}>
-                <UserManagement />
-              </RoleRoute>
-            }
-          />
-
-          <Route path="change-password" element={<ChangePassword />} />
+          <Route index                          element={<Dashboard />} />
+          <Route path="create-entry"            element={<CreateEntry />} />
+          <Route path="hod-dashboard"           element={<HODDashboard />} />
+          <Route path="superintendent-dashboard" element={<SuperintendentDashboard />} />
+          <Route path="hr-dashboard"            element={<HRDashboard />} />
+          <Route path="reports-dashboard"       element={<ReportsDashboard />} />
+          <Route path="workers"                 element={<Workers />} />
+          <Route path="users"                   element={<UserManagement />} />
+          <Route path="change-password"         element={<ChangePassword />} />
+          <Route path="activity-log"            element={<ActivityLog />} />  {/* NEW */}
         </Route>
-
       </Routes>
 
       <ToastContainer

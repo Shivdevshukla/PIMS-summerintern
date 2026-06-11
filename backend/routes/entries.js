@@ -1,6 +1,8 @@
 const express = require('express');
 const db = require('../db');
 const verifyToken = require('../middleware/auth');
+const { logAction, notifyNextApprover } = require('../auditHelper');
+
 const router = express.Router();
 
 // CREATE ENTRY
@@ -16,7 +18,6 @@ router.post('/', verifyToken, async (req, res) => {
     remarks, incentive_amount
   } = req.body;
 
-  // Simple validation
   const missing = [];
   if (!worker_name)        missing.push('worker_name');
   if (!machine_id)         missing.push('machine_id');
@@ -33,7 +34,7 @@ router.post('/', verifyToken, async (req, res) => {
     return res.status(400).json({ error: `Missing fields: ${missing.join(', ')}` });
 
   try {
-    await db.query(
+    const [result] = await db.query(
       `INSERT INTO production_entries
         (shift_incharge_id, submitted_by_name, worker_name, machine_id, dept_section,
          oc_stage, oc_type, oc_number, production_quantity, raw_material_used,
@@ -48,6 +49,24 @@ router.post('/', verifyToken, async (req, res) => {
         'pending_hod'
       ]
     );
+
+    const entryId = result.insertId;
+
+    // Audit: submitted
+    await logAction({
+      entry_id:   entryId,
+      actor_id:   req.user.id,
+      actor_name: req.user.name,
+      actor_role: 'shift_incharge',
+      action:     'submitted',
+      from_status: '',
+      to_status:   'pending_hod',
+      remarks:     remarks || null,
+    });
+
+    // Notify HOD
+    await notifyNextApprover(entryId, 'pending_hod', oc_number, req.user.name);
+
     res.status(201).json({ success: true, message: 'Entry submitted for HOD approval' });
   } catch (err) {
     console.error(err);
