@@ -4,8 +4,7 @@ import { useDispatch } from "react-redux";
 import { login } from "../store/store";
 import { toast } from "react-toastify";
 import { FaCheckCircle, FaEye, FaEyeSlash, FaShieldAlt } from "react-icons/fa";
-import { FcGoogle } from "react-icons/fc";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 
 export default function Login() {
@@ -41,11 +40,6 @@ export default function Login() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleGoogleLogin = () => {
-    toast.info("Google Sign-In is not configured yet.");
-    // window.location.href = "http://localhost:5000/api/auth/google";
   };
 
   return (
@@ -180,12 +174,11 @@ export default function Login() {
                 </div>
               </div>
 
-              <div className="flex items-center justify-between text-xs">
+              <div className="flex items-center text-xs">
                 <label className="flex items-center gap-2 text-gray-500 dark:text-gray-400 cursor-pointer">
                   <input type="checkbox" className="rounded border-gray-300"/>
                   Remember me
                 </label>
-<Link to="/forgot-password" className="text-blue-600 hover:underline font-medium">Forgot password?</Link>
               </div>
 
               <button type="submit" disabled={loading}
@@ -201,20 +194,6 @@ export default function Login() {
                 ) : "Sign In →"}
               </button>
             </form>
-
-            {/* Divider */}
-            <div className="flex items-center gap-3 my-5">
-              <div className="flex-1 h-px bg-gray-200 dark:bg-slate-600"></div>
-              <span className="text-xs text-gray-400 font-medium">OR</span>
-              <div className="flex-1 h-px bg-gray-200 dark:bg-slate-600"></div>
-            </div>
-
-            {/* Google Sign-in */}
-            <button type="button" onClick={handleGoogleLogin}
-              className="w-full flex items-center justify-center gap-3 border-2 border-gray-200 dark:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-700 rounded-xl py-3 text-sm font-semibold text-gray-700 dark:text-gray-200 transition-colors">
-              <FcGoogle size={20}/>
-              Continue with Google
-            </button>
           </div>
 
           {/* Footer */}
