@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import axios from "axios";
 import { useDispatch } from "react-redux";
 import { login } from "../store/store";
 import { toast } from "react-toastify";
-import { FaCheckCircle, FaEye, FaEyeSlash, FaShieldAlt } from "react-icons/fa";
+import { FaCheckCircle, FaEye, FaEyeSlash, FaShieldAlt, FaSun, FaMoon } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 
 
@@ -14,6 +14,27 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPwd, setShowPwd] = useState(false);
+  const [dark, setDark] = useState(false);
+
+  // Read saved theme on mount (same key ThemeToggle uses)
+  useEffect(() => {
+    const saved = localStorage.getItem("theme");
+    if (saved === "dark") {
+      document.documentElement.classList.add("dark");
+      setDark(true);
+    }
+  }, []);
+
+  const toggleTheme = () => {
+    if (dark) {
+      document.documentElement.classList.remove("dark");
+      localStorage.setItem("theme", "light");
+    } else {
+      document.documentElement.classList.add("dark");
+      localStorage.setItem("theme", "dark");
+    }
+    setDark(d => !d);
+  };
 
   const roleRedirect = (role) => {
     const map = {
@@ -44,6 +65,15 @@ export default function Login() {
 
   return (
     <div className="min-h-screen w-full overflow-x-hidden flex bg-gray-50 dark:bg-slate-950">
+
+      {/* ── Dark mode toggle ── */}
+      <button
+        onClick={toggleTheme}
+        className="fixed top-4 right-4 z-50 w-9 h-9 flex items-center justify-center rounded-xl bg-white dark:bg-slate-700 shadow-md border border-gray-200 dark:border-slate-600 text-gray-600 dark:text-yellow-300 hover:scale-110 transition-all"
+        title={dark ? "Switch to Light Mode" : "Switch to Dark Mode"}
+      >
+        {dark ? <FaSun size={14} /> : <FaMoon size={14} />}
+      </button>
 
       {/* ─── Left Panel — Live Factory Background ─────────────── */}
       <div className="hidden lg:flex lg:w-1/2 relative text-white flex-col justify-between p-12 overflow-hidden">
@@ -168,7 +198,7 @@ export default function Login() {
                     placeholder="••••••••"
                     className="w-full border-2 border-gray-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl px-4 py-3 pr-11 text-sm focus:border-blue-500 outline-none transition-colors"/>
                   <button type="button" onClick={() => setShowPwd(!showPwd)}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
                     {showPwd ? <FaEyeSlash size={14}/> : <FaEye size={14}/>}
                   </button>
                 </div>
