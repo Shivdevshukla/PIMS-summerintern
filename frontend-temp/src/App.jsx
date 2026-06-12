@@ -16,6 +16,8 @@ import Workers                from "./pages/Workers";
 import UserManagement         from "./pages/UserManagement";
 import ChangePassword         from "./pages/ChangePassword";
 import ActivityLog            from "./pages/ActivityLog"; // NEW
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 
 function PrivateRoute({ children }) {
   const { token } = useSelector((state) => state.auth);
@@ -27,7 +29,8 @@ export default function App() {
     <>
       <Routes>
         <Route path="/login" element={<Login />} />
-
+<Route path="/forgot-password" element={<ForgotPassword />} />
+<Route path="/reset-password" element={<ResetPassword />} />
         <Route
           path="/"
           element={

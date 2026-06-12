@@ -2,16 +2,11 @@ import { useState } from "react";
 import axios from "axios";
 import { useDispatch } from "react-redux";
 import { login } from "../store/store";
-import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
+import { FaCheckCircle, FaEye, FaEyeSlash, FaShieldAlt } from "react-icons/fa";
+import { FcGoogle } from "react-icons/fc";
+import { useNavigate, Link } from "react-router-dom";
 
-const DEMO_USERS = [
-  { role: "Shift Incharge", email: "shift@pims.com", password: "shift123" },
-  { role: "HOD",            email: "hod@pims.com",   password: "hod123"   },
-  { role: "Superintendent", email: "super@pims.com",  password: "super123" },
-  { role: "HR",             email: "hr@pims.com",     password: "hr123"    },
-  { role: "Admin",          email: "admin@pims.com",  password: "admin123" },
-];
 
 export default function Login() {
   const dispatch = useDispatch();
@@ -21,7 +16,6 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [showPwd, setShowPwd] = useState(false);
 
-  // Role-based redirect after login
   const roleRedirect = (role) => {
     const map = {
       shift_incharge: "/",
@@ -49,69 +43,128 @@ export default function Login() {
     }
   };
 
+  const handleGoogleLogin = () => {
+    toast.info("Google Sign-In is not configured yet.");
+    // window.location.href = "http://localhost:5000/api/auth/google";
+  };
+
   return (
-    <div className="min-h-screen flex">
-      {/* Left Panel - Branding */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-blue-800 to-indigo-900 text-white flex-col justify-between p-12">
-        <div>
-          <div className="flex items-center gap-3 mb-12">
-            <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center font-bold text-lg">U</div>
-            <span className="font-bold text-xl">Universal Cables Limited</span>
-          </div>
-          <h1 className="text-4xl font-bold leading-tight mb-4">
-            Production Incentive<br />Management System
-          </h1>
-          <p className="text-blue-200 text-lg">
-            Streamline production tracking, multi-level approvals, and worker incentive calculations in one platform.
-          </p>
-        </div>
-        {/* Add inside the left panel, above the flow steps */}
-<div className="bg-white/10 rounded-xl p-4 mb-6 backdrop-blur-sm">
-  <p className="text-blue-200 text-xs uppercase tracking-wider font-semibold mb-1">System Status</p>
-  <div className="flex items-center gap-2">
-    <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
-    <span className="text-white text-sm font-medium">All systems operational</span>
-  </div>
-  <p className="text-blue-200 text-xs mt-2">
-    {new Date().toLocaleDateString("en-IN", { weekday:"long", day:"numeric", month:"long", year:"numeric" })}
-  </p>
+    <div className="min-h-screen w-full overflow-x-hidden flex bg-gray-50 dark:bg-slate-950">
+
+      {/* ─── Left Panel — Live Factory Background ─────────────── */}
+      <div className="hidden lg:flex lg:w-1/2 relative text-white flex-col justify-between p-12 overflow-hidden">
+
+        {/* Background image */}
+        <div className="absolute inset-0 bg-cover bg-center"
+  style={{ backgroundImage: "url('/images/factory-bg.jpg')" }}>
 </div>
-        {/* Flow diagram */}
-        <div className="space-y-3">
-          <p className="text-blue-300 text-sm font-semibold uppercase tracking-wider mb-4">Approval Workflow</p>
-          {["Shift Incharge — Data Entry", "HOD — Level 1 Review", "Superintendent — Level 2 Review", "HR — Final Approval & Incentive"].map((step, i) => (
-            <div key={i} className="flex items-center gap-3">
-              <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center text-sm font-bold">{i + 1}</div>
-              <span className="text-blue-100 text-sm">{step}</span>
+
+        {/* Dark overlay for readability */}
+        <div className="absolute inset-0 bg-gradient-to-b from-[#0a1f4d]/90 via-[#0a1f4d]/85 to-[#0a1f4d]/95"></div>
+
+        {/* Decorative glows */}
+        <div className="absolute -top-32 -right-32 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl"></div>
+        <div className="absolute -bottom-40 -left-32 w-[28rem] h-[28rem] bg-indigo-500/10 rounded-full blur-3xl"></div>
+
+        {/* Top — Logo + Brand */}
+        <div className="relative z-10">
+          <div className="flex items-center gap-3 mb-1">
+            <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center shadow-lg">
+              <span className="text-[#0a1f4d] font-black text-xl">UCL</span>
             </div>
-          ))}
+            <div>
+              <h2 className="font-bold text-lg leading-tight">Universal Cables Limited</h2>
+              <p className="text-blue-300 text-[11px] font-semibold uppercase tracking-widest">Satna Plant · Madhya Pradesh</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Middle — Main message */}
+        <div className="relative z-10 max-w-md">
+          <span className="inline-block text-[11px] font-bold text-blue-300 uppercase tracking-[0.2em] mb-4 px-3 py-1 border border-blue-400/30 rounded-full">
+            Internal Use Only
+          </span>
+          <h1 className="text-4xl font-extrabold leading-tight mb-4">
+            Production Incentive<br/>Management System
+          </h1>
+          <p className="text-blue-200/80 text-base leading-relaxed">
+            A unified platform for production tracking, multi-level approvals,
+            and worker incentive computation across the Satna manufacturing unit.
+          </p>
+
+          {/* Feature pills */}
+          <div className="flex flex-wrap gap-2 mt-6">
+            {["Real-time tracking", "Role-based access", "Automated incentives", "Audit trail"].map(f => (
+              <span key={f} className="flex items-center gap-1.5 text-xs bg-white/10 border border-white/15 rounded-full px-3 py-1.5 text-blue-100 backdrop-blur-sm">
+                <FaCheckCircle className="text-green-400" size={10}/> {f}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        {/* Bottom — Workflow + status */}
+        <div className="relative z-10 space-y-4">
+          <div>
+            <p className="text-blue-300 text-[11px] font-bold uppercase tracking-widest mb-3">Approval Workflow</p>
+            <div className="flex items-center gap-2">
+              {["Shift Incharge", "HOD", "Superintendent", "HR Final"].map((step, i, arr) => (
+                <div key={step} className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 bg-white/10 border border-white/15 rounded-lg px-3 py-2 backdrop-blur-sm">
+                    <span className="w-5 h-5 rounded-full bg-blue-500 text-white text-[10px] font-bold flex items-center justify-center">{i+1}</span>
+                    <span className="text-xs text-blue-100 whitespace-nowrap">{step}</span>
+                  </div>
+                  {i < arr.length-1 && <span className="text-blue-400/40 text-xs">→</span>}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between border-t border-white/10 pt-4">
+            <div className="flex items-center gap-2">
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-60"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-400"></span>
+              </span>
+              <span className="text-xs text-blue-100 font-medium">All systems operational</span>
+            </div>
+            <span className="text-xs text-blue-300/70">
+              {new Date().toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short", year: "numeric" })}
+            </span>
+          </div>
         </div>
       </div>
 
-      {/* Right Panel - Login Form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center bg-gray-50 dark:bg-slate-900 p-8">
-        <div className="w-full max-w-md">
-          {/* Mobile logo */}
-          <div className="lg:hidden text-center mb-8">
-            <h1 className="text-2xl font-bold text-blue-700">PIMS — UCL</h1>
-            <p className="text-gray-500 text-sm mt-1">Production Incentive Management</p>
-          </div>
+      {/* ─── Right Panel — Login Form ─────────────────────────── */}
+      <div className="w-full lg:w-1/2 flex flex-col items-center justify-center p-6 sm:p-12 relative">
 
-          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-8">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">Welcome back</h2>
-            <p className="text-gray-500 dark:text-gray-400 text-sm mb-6">Sign in to your account</p>
+        {/* Mobile header */}
+        <div className="lg:hidden text-center mb-8">
+          <div className="w-14 h-14 rounded-xl bg-[#0a1f4d] flex items-center justify-center mx-auto mb-3">
+            <span className="text-white font-black text-lg">UCL</span>
+          </div>
+          <h1 className="text-xl font-bold text-gray-900 dark:text-white">Universal Cables Limited</h1>
+          <p className="text-gray-400 text-xs uppercase tracking-widest font-semibold mt-1">PIMS — Satna Plant</p>
+        </div>
+
+        <div className="w-full max-w-md">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700 p-8">
+
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Welcome back</h2>
+                <p className="text-gray-400 text-sm mt-0.5">Sign in to continue to PIMS</p>
+              </div>
+              <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-slate-700 flex items-center justify-center">
+                <FaShieldAlt className="text-blue-600 dark:text-blue-400" size={18}/>
+              </div>
+            </div>
 
             <form onSubmit={submit} className="space-y-4">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Email Address</label>
-           <input
-  type="email"
-  autoFocus
-  value={email}
-  onChange={e => setEmail(e.target.value)}
-  placeholder="your@email.com"
-  className="w-full border-2 border-gray-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl px-4 py-3 text-sm focus:border-blue-500 outline-none transition-colors"
-/>
+                <input type="email" autoFocus value={email} onChange={e => setEmail(e.target.value)}
+                  placeholder="employee@ucl.com"
+                  className="w-full border-2 border-gray-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl px-4 py-3 text-sm focus:border-blue-500 outline-none transition-colors"/>
               </div>
 
               <div>
@@ -119,42 +172,56 @@ export default function Login() {
                 <div className="relative">
                   <input type={showPwd ? "text" : "password"} value={password} onChange={e => setPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="w-full border-2 border-gray-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl px-4 py-3 pr-10 text-sm focus:border-blue-500 outline-none transition-colors"/>
+                    className="w-full border-2 border-gray-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl px-4 py-3 pr-11 text-sm focus:border-blue-500 outline-none transition-colors"/>
                   <button type="button" onClick={() => setShowPwd(!showPwd)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xs">
-                    {showPwd ? "Hide" : "Show"}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                    {showPwd ? <FaEyeSlash size={14}/> : <FaEye size={14}/>}
                   </button>
                 </div>
               </div>
 
+              <div className="flex items-center justify-between text-xs">
+                <label className="flex items-center gap-2 text-gray-500 dark:text-gray-400 cursor-pointer">
+                  <input type="checkbox" className="rounded border-gray-300"/>
+                  Remember me
+                </label>
+<Link to="/forgot-password" className="text-blue-600 hover:underline font-medium">Forgot password?</Link>
+              </div>
+
               <button type="submit" disabled={loading}
-  className="w-full bg-blue-700 hover:bg-blue-800 disabled:opacity-60 text-white py-3 rounded-xl font-semibold transition-colors text-sm flex items-center justify-center gap-2">
-  {loading ? (
-    <>
-      <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
-        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="white" strokeWidth="4"/>
-        <path className="opacity-75" fill="white" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
-      </svg>
-      Signing in...
-    </>
-  ) : "Sign In →"}
-</button>
+                className="w-full bg-[#0a1f4d] hover:bg-[#102a66] disabled:opacity-60 text-white py-3 rounded-xl font-semibold transition-colors text-sm flex items-center justify-center gap-2">
+                {loading ? (
+                  <>
+                    <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="white" strokeWidth="4"/>
+                      <path className="opacity-75" fill="white" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                    </svg>
+                    Signing in...
+                  </>
+                ) : "Sign In →"}
+              </button>
             </form>
 
-            {/* Demo credentials */}
-            <div className="mt-6 p-4 bg-gray-50 dark:bg-slate-700 rounded-xl">
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Demo Credentials — click to fill</p>
-              <div className="space-y-1.5">
-                {DEMO_USERS.map(u => (
-                  <button key={u.email} onClick={() => { setEmail(u.email); setPassword(u.password); }}
-                    className="w-full text-left flex items-center justify-between px-3 py-1.5 rounded-lg hover:bg-white dark:hover:bg-slate-600 transition-colors">
-                    <span className="text-xs font-semibold text-gray-600 dark:text-gray-300">{u.role}</span>
-                    <span className="text-xs text-gray-400">{u.email}</span>
-                  </button>
-                ))}
-              </div>
+            {/* Divider */}
+            <div className="flex items-center gap-3 my-5">
+              <div className="flex-1 h-px bg-gray-200 dark:bg-slate-600"></div>
+              <span className="text-xs text-gray-400 font-medium">OR</span>
+              <div className="flex-1 h-px bg-gray-200 dark:bg-slate-600"></div>
             </div>
+
+            {/* Google Sign-in */}
+            <button type="button" onClick={handleGoogleLogin}
+              className="w-full flex items-center justify-center gap-3 border-2 border-gray-200 dark:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-700 rounded-xl py-3 text-sm font-semibold text-gray-700 dark:text-gray-200 transition-colors">
+              <FcGoogle size={20}/>
+              Continue with Google
+            </button>
           </div>
+
+          {/* Footer */}
+          <p className="text-center text-xs text-gray-400 mt-6">
+            © {new Date().getFullYear()} Universal Cables Limited — Satna Plant. All rights reserved.<br/>
+            <span className="text-gray-300">Authorized personnel only · v1.0</span>
+          </p>
         </div>
       </div>
     </div>
