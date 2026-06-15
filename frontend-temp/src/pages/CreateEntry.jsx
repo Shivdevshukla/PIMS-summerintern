@@ -1,10 +1,11 @@
 import { toast } from "react-toastify";
 import { useState, useEffect, useRef } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import api from "../api";
 import {
   FaIndustry, FaChartBar, FaUsers, FaStickyNote,
   FaRupeeSign, FaSearch, FaTimes, FaCheckCircle, FaSpinner,
-  FaExclamationTriangle,
+  FaExclamationTriangle, FaUndo,
 } from "react-icons/fa";
 
 const OC_STAGES = ["Extrusion", "Stranding", "Armoring", "Sheathing", "Final", "Inspection"];
@@ -53,6 +54,13 @@ function SectionHeader({ icon: Icon, title, step }) {
 }
 
 export default function CreateEntry() {
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // ── Resubmit mode: came from Dashboard "Edit & Resubmit" button ──
+  const resubmitEntry = location.state?.resubmitEntry || null;
+  const isResubmit = !!resubmitEntry;
+
   const [workers, setWorkers] = useState([]);
   const [selectedWorkers, setSelectedWorkers] = useState([]);
   const [workerSearch, setWorkerSearch] = useState("");
@@ -67,6 +75,28 @@ export default function CreateEntry() {
   const [ocCheck, setOcCheck] = useState({ status: "idle", message: "" });
 
   const [form, setForm] = useState(() => {
+    // Resubmitting a rejected entry — pre-fill from that entry, skip draft restore
+    if (resubmitEntry) {
+      return {
+        machine_id:           resubmitEntry.machine_id || "",
+        dept_section:         resubmitEntry.dept_section || "",
+        oc_stage:             resubmitEntry.oc_stage || "",
+        oc_type:              resubmitEntry.oc_type || "",
+        oc_number:            resubmitEntry.oc_number || "",
+        shift:                resubmitEntry.shift || "A",
+        shift_date:           resubmitEntry.shift_date
+                                ? new Date(resubmitEntry.shift_date).toISOString().split("T")[0]
+                                : new Date().toISOString().split("T")[0],
+        working_hours:        resubmitEntry.working_hours || 8,
+        production_quantity:  resubmitEntry.production_quantity || "",
+        raw_material_used:    resubmitEntry.raw_material_used || "",
+        incentive_rate:       resubmitEntry.production_quantity
+                                ? (Number(resubmitEntry.incentive_amount) / Number(resubmitEntry.production_quantity)) || 5
+                                : 5,
+        incentive_amount:     resubmitEntry.incentive_amount || 0,
+        remarks:              "",
+      };
+    }
     // Restore draft from sessionStorage if available
     try {
       const draft = sessionStorage.getItem("pims_entry_draft");
@@ -75,6 +105,19 @@ export default function CreateEntry() {
       return EMPTY_FORM;
     }
   });
+
+  // Pre-fill selected workers when resubmitting (worker_name is a comma-separated string)
+  useEffect(() => {
+    if (resubmitEntry && workers.length > 0 && selectedWorkers.length === 0) {
+      const names = (resubmitEntry.worker_name || "")
+        .split(",")
+        .map((n) => n.trim())
+        .filter(Boolean);
+      const matched = workers.filter((w) => names.includes(w.name));
+      if (matched.length > 0) setSelectedWorkers(matched);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [workers]);
 
   useEffect(() => { loadWorkers(); }, []);
 
@@ -85,12 +128,13 @@ export default function CreateEntry() {
     setForm((prev) => ({ ...prev, incentive_amount: (qty * rate).toFixed(2) }));
   }, [form.production_quantity, form.incentive_rate]);
 
-  // Auto-save draft
+  // Auto-save draft (skip in resubmit mode — don't pollute the new-entry draft)
   useEffect(() => {
+    if (isResubmit) return;
     try {
       sessionStorage.setItem("pims_entry_draft", JSON.stringify(form));
     } catch {}
-  }, [form]);
+  }, [form, isResubmit]);
 
   // ── Live OC Number duplicate check (debounced) ──
   useEffect(() => {
@@ -193,6 +237,10 @@ export default function CreateEntry() {
     setSubmitted(false);
     setOcCheck({ status: "idle", message: "" });
     try { sessionStorage.removeItem("pims_entry_draft"); } catch {}
+    if (isResubmit) {
+      // Clear resubmit state from history so a refresh doesn't reopen it
+      navigate("/create-entry", { replace: true, state: null });
+    }
   };
 
   const submitEntry = async (e) => {
@@ -207,7 +255,7 @@ export default function CreateEntry() {
     setLoading(true);
     try {
       const worker_name = selectedWorkers.map((w) => w.name).join(", ");
-      await api.post("/entries", {
+      const payload = {
         worker_name,
         machine_id:          form.machine_id,
         dept_section:        form.dept_section,
@@ -221,11 +269,18 @@ export default function CreateEntry() {
         raw_material_used:   Number(form.raw_material_used) || 0,
         incentive_amount:    Number(form.incentive_amount),
         remarks:             form.remarks,
-      });
+      };
 
-      setSubmitted(true);
-      try { sessionStorage.removeItem("pims_entry_draft"); } catch {}
-      toast.success("Entry submitted for HOD approval!");
+      if (isResubmit) {
+        await api.put(`/entries/${resubmitEntry.id}/resubmit`, payload);
+        setSubmitted(true);
+        toast.success("Entry updated and resubmitted for HOD approval!");
+      } else {
+        await api.post("/entries", payload);
+        setSubmitted(true);
+        try { sessionStorage.removeItem("pims_entry_draft"); } catch {}
+        toast.success("Entry submitted for HOD approval!");
+      }
     } catch (err) {
       console.error(err);
       const backendErrors = err.response?.data?.errors;
@@ -253,9 +308,13 @@ export default function CreateEntry() {
           <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <FaCheckCircle className="text-green-500" size={32} />
           </div>
-          <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-2">Entry Submitted!</h2>
+          <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-2">
+            {isResubmit ? "Entry Resubmitted!" : "Entry Submitted!"}
+          </h2>
           <p className="text-gray-500 dark:text-gray-400 text-sm mb-6">
-            Your production entry has been sent to the HOD for approval. You can track its status on the dashboard.
+            {isResubmit
+              ? "Your updated production entry has been sent back to the HOD for approval. You can track its status on the dashboard."
+              : "Your production entry has been sent to the HOD for approval. You can track its status on the dashboard."}
           </p>
           <div className="flex gap-3 justify-center">
             <button
@@ -285,8 +344,14 @@ export default function CreateEntry() {
     <div className="max-w-4xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Create Production Entry</h1>
-          <p className="text-sm text-gray-400 mt-0.5">Fill in the details below to submit an entry for HOD approval</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+            {isResubmit ? "Edit & Resubmit Entry" : "Create Production Entry"}
+          </h1>
+          <p className="text-sm text-gray-400 mt-0.5">
+            {isResubmit
+              ? "Fix the issue noted by the approver, then resubmit for HOD approval"
+              : "Fill in the details below to submit an entry for HOD approval"}
+          </p>
         </div>
         <button
           type="button"
@@ -296,6 +361,26 @@ export default function CreateEntry() {
           Clear form
         </button>
       </div>
+
+      {/* ── Rejection reason banner (resubmit mode) ── */}
+      {isResubmit && (
+        <div className="mb-5 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 rounded-2xl p-4 flex items-start gap-3">
+          <FaUndo className="text-red-500 mt-0.5 shrink-0" size={16} />
+          <div>
+            <p className="text-sm font-bold text-red-700 dark:text-red-400">
+              This entry (OC #{resubmitEntry.oc_number}) was rejected
+            </p>
+            {(resubmitEntry.hod_remarks || resubmitEntry.superintendent_remarks || resubmitEntry.hr_remarks) && (
+              <p className="text-xs text-red-600 dark:text-red-300 mt-1">
+                Reason: {resubmitEntry.hod_remarks || resubmitEntry.superintendent_remarks || resubmitEntry.hr_remarks}
+              </p>
+            )}
+            <p className="text-xs text-red-500 dark:text-red-400/80 mt-1">
+              Make the necessary corrections below and resubmit — it will go back through HOD → Superintendent → HR approval.
+            </p>
+          </div>
+        </div>
+      )}
 
       <form onSubmit={submitEntry} className="space-y-5" noValidate>
 
@@ -631,9 +716,11 @@ export default function CreateEntry() {
             className="flex items-center gap-2.5 bg-white text-blue-700 hover:bg-blue-50 disabled:opacity-70 disabled:cursor-not-allowed font-bold text-sm px-6 py-3 rounded-xl transition-all shadow"
           >
             {loading ? (
-              <><FaSpinner className="animate-spin" size={14} /> Submitting…</>
+              <><FaSpinner className="animate-spin" size={14} /> {isResubmit ? "Resubmitting…" : "Submitting…"}</>
             ) : ocCheck.status === "duplicate" ? (
               <><FaExclamationTriangle size={14} /> Duplicate OC Number</>
+            ) : isResubmit ? (
+              <><FaUndo size={14} /> Resubmit for HOD Approval</>
             ) : (
               <><FaCheckCircle size={14} /> Submit for HOD Approval</>
             )}

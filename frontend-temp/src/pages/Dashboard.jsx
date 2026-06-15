@@ -13,6 +13,7 @@ import {
   FaHourglassHalf,
   FaSyncAlt,
   FaChevronRight,
+  FaEdit,
 } from "react-icons/fa";
 
 const STATUS_CONFIG = {
@@ -337,7 +338,7 @@ export default function Dashboard() {
           <h2 className="text-base font-semibold text-gray-800 dark:text-white">Recent Production Entries</h2>
 
           <div className="flex gap-1 text-xs font-medium bg-gray-100 dark:bg-slate-700 p-1 rounded-xl">
-            {["all", "pending_hod", "approved"].map((s) => (
+            {["all", "pending_hod", "approved", "rejected"].map((s) => (
               <button
                 key={s}
                 onClick={() => setFilterStatus(s)}
@@ -363,6 +364,7 @@ export default function Dashboard() {
                 <th className="px-5 py-3 font-semibold">Incentive</th>
                 <th className="px-5 py-3 font-semibold">Status</th>
                 <th className="px-5 py-3 font-semibold">Date</th>
+                <th className="px-5 py-3 font-semibold">Action</th>
               </tr>
             </thead>
             <tbody>
@@ -399,12 +401,25 @@ export default function Dashboard() {
                           year: "numeric",
                         })}
                       </td>
+                      <td className="px-5 py-3.5">
+                        {entry.status === "rejected" ? (
+                          <button
+                            onClick={() => navigate("/create-entry", { state: { resubmitEntry: entry } })}
+                            className="flex items-center gap-1.5 bg-orange-500 hover:bg-orange-600 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors shadow-sm"
+                          >
+                            <FaEdit size={11} />
+                            Edit &amp; Resubmit
+                          </button>
+                        ) : (
+                          <span className="text-gray-300 dark:text-gray-600 text-xs">—</span>
+                        )}
+                      </td>
                     </tr>
                   );
                 })
               ) : (
                 <tr>
-                  <td colSpan="6" className="text-center py-12 text-gray-400 dark:text-gray-500">
+                  <td colSpan="7" className="text-center py-12 text-gray-400 dark:text-gray-500">
                     <FaClipboardList size={28} className="mx-auto mb-2 opacity-30" />
                     <p className="text-sm">No entries found</p>
                     <button
