@@ -28,9 +28,17 @@ export default function Navbar() {
 
         {/* User info */}
         <div className="flex items-center gap-2.5 pl-1">
-          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center text-sm font-bold">
-            {user?.name?.[0]?.toUpperCase()}
-          </div>
+          {user?.profile_photo ? (
+  <img
+    src={`http://localhost:5000${user.profile_photo}`}
+    alt="Profile"
+    className="w-9 h-9 rounded-full object-cover border-2 border-white dark:border-slate-700 shadow-sm"
+  />
+) : (
+  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center text-sm font-bold">
+    {user?.name?.[0]?.toUpperCase()}
+  </div>
+)}
           <div className="hidden sm:block">
             <p className="font-semibold text-sm text-gray-800 dark:text-white leading-tight">{user?.name}</p>
             <p className="text-[10px] text-gray-400 uppercase tracking-wide">

@@ -2,6 +2,7 @@ import { toast } from "react-toastify";
 import { useEffect, useState } from "react";
 import api from "../api";
 import Swal from "sweetalert2";
+import ProfilePhotoUpload from "../components/ProfilePhotoUpload";
 
 const ROLE_OPTIONS = [
   { value: "shift_incharge", label: "Shift Incharge" },
@@ -219,7 +220,16 @@ function UserManagement() {
           </button>
         </form>
       </div>
-
+{/* Admin Profile Card */}
+<div className="bg-white dark:bg-slate-800 rounded-2xl shadow p-6 mb-6 flex items-center gap-6">
+  <ProfilePhotoUpload size={80} />
+  <div>
+    <h2 className="text-lg font-bold text-gray-900 dark:text-white">Admin Profile</h2>
+    <p className="text-sm text-gray-500 dark:text-gray-400">
+      Manage your profile photo and account details
+    </p>
+  </div>
+</div>
       {/* Users Table */}
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">

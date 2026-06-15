@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { toast } from "react-toastify";
 import api from "../api";
+import ProfilePhotoUpload from "../components/ProfilePhotoUpload";
 
 function ChangePassword() {
   const [form, setForm] = useState({
@@ -87,6 +88,17 @@ function ChangePassword() {
   return (
     <div className="min-h-screen p-6 flex items-start justify-center">
       <div className="w-full max-w-md">
+
+        {/* ── Profile Photo Card ── */}
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8 mb-6">
+          <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-1">Profile Photo</h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+            Upload a photo to personalize your account
+          </p>
+          <ProfilePhotoUpload size={96} />
+        </div>
+
+        {/* ── Change Password Card ── */}
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8">
           {/* Header */}
           <div className="mb-6">

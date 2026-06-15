@@ -51,8 +51,7 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className="w-64 bg-white dark:bg-slate-800 shadow-lg min-h-screen flex flex-col transition-colors duration-300 border-r border-gray-100 dark:border-slate-700">
-
+<aside className="w-64 h-screen bg-white dark:bg-slate-800 shadow-lg flex flex-col transition-colors duration-300 border-r border-gray-100 dark:border-slate-700 overflow-y-auto flex-shrink-0">
       {/* Logo */}
       <div className={`p-5 bg-gradient-to-br ${roleGradient} text-white`}>
         <div className="flex items-center gap-3">
@@ -70,9 +69,17 @@ export default function Sidebar() {
 
       {/* User card */}
       <div className="px-4 py-3 border-b border-gray-100 dark:border-slate-700 flex items-center gap-3">
-        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center text-sm font-bold shrink-0">
-          {user?.name?.[0]?.toUpperCase()}
-        </div>
+        {user?.profile_photo ? (
+  <img
+    src={`http://localhost:5000${user.profile_photo}`}
+    alt="Profile"
+    className="w-9 h-9 rounded-full object-cover shrink-0 border-2 border-white dark:border-slate-700"
+  />
+) : (
+  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center text-sm font-bold shrink-0">
+    {user?.name?.[0]?.toUpperCase()}
+  </div>
+)}
         <div className="min-w-0">
           <p className="text-sm font-semibold text-gray-800 dark:text-white truncate">{user?.name}</p>
           <p className="text-xs text-gray-400 truncate">{user?.email}</p>

@@ -80,7 +80,8 @@ router.post('/login', async (req, res) => {
     id: user.id,
     name: user.name,
     email: user.email,
-    role: user.role
+    role: user.role,
+    profile_photo: user.profile_photo || null   
   }
 });
 
