@@ -5,6 +5,67 @@ const { logAction, notifyNextApprover } = require('../auditHelper');
 
 const router = express.Router();
 
+// ─── Helper: find an existing ACTIVE (non-rejected) entry with the same
+//     OC Number + Shift Date + Shift ──────────────────────────────────────
+async function findDuplicateOC(oc_number, shift_date, shift, excludeId = null) {
+  let query = `
+    SELECT id, status, submitted_by_name, created_at
+    FROM production_entries
+    WHERE oc_number = ? AND shift_date = ? AND shift = ? AND status != 'rejected'
+  `;
+  const params = [oc_number, shift_date, shift];
+
+  if (excludeId) {
+    query += ' AND id != ?';
+    params.push(excludeId);
+  }
+
+  const [rows] = await db.query(query, params);
+  return rows[0] || null;
+}
+
+// Friendly message builder
+function duplicateMessage(oc_number, shift, shift_date, duplicate) {
+  const formattedDate = new Date(shift_date).toLocaleDateString('en-IN', {
+    day: '2-digit', month: 'short', year: 'numeric',
+  });
+  const statusLabel = duplicate.status.replace(/_/g, ' ');
+  return `OC #${oc_number} is already logged for Shift ${shift} on ${formattedDate} `
+       + `(status: ${statusLabel}, submitted by ${duplicate.submitted_by_name}). `
+       + `Please verify before re-entering this entry.`;
+}
+
+// ========================
+// CHECK OC NUMBER (live validation while typing)
+// GET /api/entries/check-oc?oc_number=1256&shift_date=2026-06-15&shift=A
+// ⚠️ Must be declared BEFORE GET /:id, otherwise Express treats
+//    "check-oc" as an :id param.
+// ========================
+router.get('/check-oc', verifyToken, async (req, res) => {
+  const { oc_number, shift_date, shift } = req.query;
+
+  if (!oc_number || !shift_date || !shift) {
+    return res.json({ duplicate: false }); // not enough info yet — don't block typing
+  }
+
+  try {
+    const duplicate = await findDuplicateOC(oc_number.trim(), shift_date, shift);
+
+    if (duplicate) {
+      return res.json({
+        duplicate: true,
+        message: duplicateMessage(oc_number.trim(), shift, shift_date, duplicate),
+        entry: duplicate,
+      });
+    }
+
+    res.json({ duplicate: false });
+  } catch (err) {
+    console.error('OC check error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // CREATE ENTRY
 router.post('/', verifyToken, async (req, res) => {
   if (req.user.role !== 'shift_incharge')
@@ -33,7 +94,17 @@ router.post('/', verifyToken, async (req, res) => {
   if (missing.length > 0)
     return res.status(400).json({ error: `Missing fields: ${missing.join(', ')}` });
 
+  const trimmedOcNumber = oc_number.trim();
+
   try {
+    // ── Duplicate check (before insert) ──
+    const duplicate = await findDuplicateOC(trimmedOcNumber, shift_date, shift);
+    if (duplicate) {
+      return res.status(409).json({
+        error: duplicateMessage(trimmedOcNumber, shift, shift_date, duplicate),
+      });
+    }
+
     const [result] = await db.query(
       `INSERT INTO production_entries
         (shift_incharge_id, submitted_by_name, worker_name, machine_id, dept_section,
@@ -42,7 +113,7 @@ router.post('/', verifyToken, async (req, res) => {
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         req.user.id, req.user.name, worker_name, machine_id, dept_section,
-        oc_stage, oc_type, oc_number,
+        oc_stage, oc_type, trimmedOcNumber,
         Number(production_quantity), Number(raw_material_used) || 0,
         Number(working_hours), shift_date, shift,
         remarks || '', Number(incentive_amount) || 0,
@@ -65,10 +136,20 @@ router.post('/', verifyToken, async (req, res) => {
     });
 
     // Notify HOD
-    await notifyNextApprover(entryId, 'pending_hod', oc_number, req.user.name);
+    await notifyNextApprover(entryId, 'pending_hod', trimmedOcNumber, req.user.name);
 
     res.status(201).json({ success: true, message: 'Entry submitted for HOD approval' });
   } catch (err) {
+    // Safety net: DB-level unique constraint (race condition between
+    // the pre-check above and the insert — e.g. two Shift Incharges
+    // submitting the same OC at the exact same moment)
+    if (err.code === 'ER_DUP_ENTRY') {
+      return res.status(409).json({
+        error: `OC #${trimmedOcNumber} is already logged for Shift ${shift} on this date. `
+             + `Please refresh and verify before re-entering this entry.`,
+      });
+    }
+
     console.error(err);
     res.status(500).json({ error: err.message });
   }

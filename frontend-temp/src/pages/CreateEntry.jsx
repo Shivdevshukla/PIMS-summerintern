@@ -4,6 +4,7 @@ import api from "../api";
 import {
   FaIndustry, FaChartBar, FaUsers, FaStickyNote,
   FaRupeeSign, FaSearch, FaTimes, FaCheckCircle, FaSpinner,
+  FaExclamationTriangle,
 } from "react-icons/fa";
 
 const OC_STAGES = ["Extrusion", "Stranding", "Armoring", "Sheathing", "Final", "Inspection"];
@@ -61,6 +62,10 @@ export default function CreateEntry() {
   const [errors, setErrors] = useState({});
   const searchRef = useRef(null);
 
+  // OC Number duplicate check state
+  // ocCheck.status: 'idle' | 'checking' | 'duplicate' | 'available'
+  const [ocCheck, setOcCheck] = useState({ status: "idle", message: "" });
+
   const [form, setForm] = useState(() => {
     // Restore draft from sessionStorage if available
     try {
@@ -86,6 +91,39 @@ export default function CreateEntry() {
       sessionStorage.setItem("pims_entry_draft", JSON.stringify(form));
     } catch {}
   }, [form]);
+
+  // ── Live OC Number duplicate check (debounced) ──
+  useEffect(() => {
+    const ocNumber  = form.oc_number.trim();
+    const shiftDate = form.shift_date;
+    const shift     = form.shift;
+
+    // Not enough info yet — reset to idle
+    if (!ocNumber || !shiftDate || !shift) {
+      setOcCheck({ status: "idle", message: "" });
+      return;
+    }
+
+    setOcCheck({ status: "checking", message: "" });
+
+    const timer = setTimeout(async () => {
+      try {
+        const res = await api.get("/entries/check-oc", {
+          params: { oc_number: ocNumber, shift_date: shiftDate, shift },
+        });
+        if (res.data.duplicate) {
+          setOcCheck({ status: "duplicate", message: res.data.message });
+        } else {
+          setOcCheck({ status: "available", message: "" });
+        }
+      } catch {
+        // Silently ignore — server-side check on submit will still catch it
+        setOcCheck({ status: "idle", message: "" });
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [form.oc_number, form.shift_date, form.shift]);
 
   const loadWorkers = async () => {
     try {
@@ -137,6 +175,8 @@ export default function CreateEntry() {
     if (!form.oc_stage)                  e.oc_stage = "Select an OC stage";
     if (!form.oc_type)                   e.oc_type = "Select an OC type";
     if (!form.oc_number.trim())          e.oc_number = "OC Number is required";
+    else if (ocCheck.status === "duplicate") e.oc_number = ocCheck.message;
+    else if (ocCheck.status === "checking")  e.oc_number = "Checking OC Number, please wait…";
     if (!form.shift_date)                e.shift_date = "Shift date is required";
     if (!form.working_hours || Number(form.working_hours) <= 0)
                                          e.working_hours = "Working hours must be > 0";
@@ -151,6 +191,7 @@ export default function CreateEntry() {
     setSelectedWorkers([]);
     setErrors({});
     setSubmitted(false);
+    setOcCheck({ status: "idle", message: "" });
     try { sessionStorage.removeItem("pims_entry_draft"); } catch {}
   };
 
@@ -188,7 +229,14 @@ export default function CreateEntry() {
     } catch (err) {
       console.error(err);
       const backendErrors = err.response?.data?.errors;
-      if (backendErrors?.length > 0) {
+
+      if (err.response?.status === 409) {
+        // Duplicate OC caught by backend (race condition fallback)
+        const msg = err.response?.data?.error || "This OC entry already exists for this shift.";
+        setOcCheck({ status: "duplicate", message: msg });
+        setErrors((prev) => ({ ...prev, oc_number: msg }));
+        toast.error(msg);
+      } else if (backendErrors?.length > 0) {
         backendErrors.forEach((e) => toast.error(e.msg));
       } else {
         toast.error(err.response?.data?.error || "Submission failed");
@@ -308,11 +356,45 @@ export default function CreateEntry() {
 
             <div>
               <label className={labelCls}>OC Number *</label>
-              <input
-                type="text" name="oc_number" value={form.oc_number}
-                onChange={handleChange} placeholder="e.g. 1256"
-                className={`${inputCls} ${errors.oc_number ? "border-red-400" : ""}`}
-              />
+              <div className="relative">
+                <input
+                  type="text" name="oc_number" value={form.oc_number}
+                  onChange={handleChange} placeholder="e.g. 1256"
+                  className={`${inputCls} pr-9 ${
+                    errors.oc_number || ocCheck.status === "duplicate"
+                      ? "border-red-400 focus:ring-red-400"
+                      : ocCheck.status === "available"
+                      ? "border-green-300 focus:ring-green-400"
+                      : ""
+                  }`}
+                />
+                {/* Status icon */}
+                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                  {ocCheck.status === "checking" && (
+                    <FaSpinner className="animate-spin text-gray-400" size={13} />
+                  )}
+                  {ocCheck.status === "available" && (
+                    <FaCheckCircle className="text-green-500" size={13} />
+                  )}
+                  {ocCheck.status === "duplicate" && (
+                    <FaExclamationTriangle className="text-red-500" size={13} />
+                  )}
+                </div>
+              </div>
+
+              {/* Inline feedback */}
+              {ocCheck.status === "duplicate" && !errors.oc_number && (
+                <p className="text-xs text-red-500 mt-1 flex items-start gap-1">
+                  <FaExclamationTriangle className="mt-0.5 shrink-0" size={11} />
+                  {ocCheck.message}
+                </p>
+              )}
+              {ocCheck.status === "available" && form.oc_number.trim() && (
+                <p className="text-xs text-green-600 dark:text-green-400 mt-1 flex items-center gap-1">
+                  <FaCheckCircle size={11} />
+                  Available for Shift {form.shift} on this date
+                </p>
+              )}
               {errors.oc_number && <p className={errorCls}>{errors.oc_number}</p>}
             </div>
 
@@ -545,11 +627,13 @@ export default function CreateEntry() {
           </div>
           <button
             type="submit"
-            disabled={loading}
-            className="flex items-center gap-2.5 bg-white text-blue-700 hover:bg-blue-50 disabled:opacity-70 font-bold text-sm px-6 py-3 rounded-xl transition-all shadow"
+            disabled={loading || ocCheck.status === "checking" || ocCheck.status === "duplicate"}
+            className="flex items-center gap-2.5 bg-white text-blue-700 hover:bg-blue-50 disabled:opacity-70 disabled:cursor-not-allowed font-bold text-sm px-6 py-3 rounded-xl transition-all shadow"
           >
             {loading ? (
               <><FaSpinner className="animate-spin" size={14} /> Submitting…</>
+            ) : ocCheck.status === "duplicate" ? (
+              <><FaExclamationTriangle size={14} /> Duplicate OC Number</>
             ) : (
               <><FaCheckCircle size={14} /> Submit for HOD Approval</>
             )}
