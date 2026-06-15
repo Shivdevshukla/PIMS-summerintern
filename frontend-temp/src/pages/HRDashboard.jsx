@@ -235,7 +235,7 @@ export default function HRDashboard() {
     if (isRefresh) setRefreshing(true);
     try {
       const res = await api.get("/entries");
-      setEntries(res.data.filter(e => e.status === "pending_hr"));
+      setEntries(res.data);
     } catch {
       toast.error("Failed to load entries");
     }

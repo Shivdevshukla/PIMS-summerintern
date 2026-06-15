@@ -74,12 +74,35 @@ router.post('/', verifyToken, async (req, res) => {
   }
 });
 
-// GET ALL ENTRIES
+// GET ALL ENTRIES — filtered by role on the backend
 router.get('/', verifyToken, async (req, res) => {
+  const { role, id } = req.user;
+
+  // Map each approver role to the exact status they should see
+  const ROLE_STATUS = {
+    hod:            'pending_hod',
+    superintendent: 'pending_superintendent',
+    hr:             'pending_hr',
+  };
+
+  let query = 'SELECT * FROM production_entries';
+  const args = [];
+
+  if (role === 'shift_incharge') {
+    // Shift incharge sees only their own submissions (all statuses)
+    query += ' WHERE shift_incharge_id = ?';
+    args.push(id);
+  } else if (ROLE_STATUS[role]) {
+    // HOD / Superintendent / HR each see only entries awaiting their action
+    query += ' WHERE status = ?';
+    args.push(ROLE_STATUS[role]);
+  }
+  // admin and any other roles get everything (no WHERE clause)
+
+  query += ' ORDER BY created_at DESC';
+
   try {
-    const [rows] = await db.query(
-      'SELECT * FROM production_entries ORDER BY created_at DESC'
-    );
+    const [rows] = await db.query(query, args);
     res.json(rows);
   } catch (err) {
     res.status(500).json({ error: err.message });

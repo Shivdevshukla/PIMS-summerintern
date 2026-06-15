@@ -27,6 +27,8 @@ router.put('/hod/:id', verifyToken, async (req, res) => {
   try {
     const entry = await getEntry(req.params.id);
     if (!entry) return res.status(404).json({ error: 'Entry not found' });
+    if (entry.status !== 'pending_hod')
+      return res.status(409).json({ error: `Entry is not pending HOD approval (current status: ${entry.status})` });
 
     if (action === 'approve') {
       await db.query(
@@ -76,6 +78,8 @@ router.put('/superintendent/:id', verifyToken, async (req, res) => {
   try {
     const entry = await getEntry(req.params.id);
     if (!entry) return res.status(404).json({ error: 'Entry not found' });
+    if (entry.status !== 'pending_superintendent')
+      return res.status(409).json({ error: `Entry is not pending Superintendent approval (current status: ${entry.status})` });
 
     if (action === 'approve') {
       await db.query(
@@ -125,6 +129,8 @@ router.put('/hr/:id', verifyToken, async (req, res) => {
   try {
     const entry = await getEntry(req.params.id);
     if (!entry) return res.status(404).json({ error: 'Entry not found' });
+    if (entry.status !== 'pending_hr')
+      return res.status(409).json({ error: `Entry is not pending HR approval (current status: ${entry.status})` });
 
     if (action === 'approve') {
       await db.query(

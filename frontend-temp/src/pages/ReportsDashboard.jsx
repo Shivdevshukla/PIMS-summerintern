@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import api from "../api";
+import { toast } from "react-toastify";
 import {
   Chart as ChartJS,
   ArcElement, Tooltip, Legend,
@@ -183,10 +184,23 @@ export default function ReportsDashboard() {
   const exportExcel = async () => {
     setExporting(true);
     try {
-      window.open("http://localhost:5000/api/export/excel", "_blank");
-    } finally {
-      setTimeout(() => setExporting(false), 2000);
+      const res = await api.get("/export/excel", { responseType: "blob" });
+      const url = URL.createObjectURL(
+        new Blob([res.data], {
+          type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        })
+      );
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", "PIMS-Production-Report.xlsx");
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      toast.error("Export failed");
     }
+    setExporting(false);
   };
 
   if (loading) {

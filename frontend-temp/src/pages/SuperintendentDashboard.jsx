@@ -188,7 +188,7 @@ export default function SuperintendentDashboard() {
     if (isRefresh) setRefreshing(true);
     try {
       const res = await api.get("/entries");
-      setEntries(res.data.filter(e => e.status === "pending_superintendent"));
+      setEntries(res.data);
     } catch {
       toast.error("Failed to load entries");
     }

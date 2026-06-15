@@ -10,8 +10,8 @@ const dashboardRoutes    = require('./routes/dashboard');
 const workerRoutes       = require('./routes/workers');
 const exportRoutes       = require('./routes/export');
 const userRoutes         = require('./routes/users');
-const notificationRoutes = require('./routes/notifications'); // NEW
-const auditRoutes        = require('./routes/audit');         // NEW
+const notificationRoutes = require('./routes/notifications');
+const auditRoutes        = require('./routes/audit');
 
 const app = express();
 
@@ -25,8 +25,8 @@ app.use('/api/dashboard',     dashboardRoutes);
 app.use('/api/workers',       workerRoutes);
 app.use('/api/export',        exportRoutes);
 app.use('/api/users',         userRoutes);
-app.use('/api/notifications', notificationRoutes); // NEW
-app.use('/api/audit',         auditRoutes);         // NEW
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/audit',         auditRoutes);
 
 app.get('/', (req, res) => res.send('PIMS Backend Running...'));
 

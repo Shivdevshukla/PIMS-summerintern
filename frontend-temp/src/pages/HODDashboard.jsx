@@ -149,7 +149,7 @@ export default function HODDashboard() {
     if (isRefresh) setRefreshing(true);
     try {
       const res = await api.get("/entries");
-      setEntries(res.data.filter(e => e.status === "pending_hod"));
+      setEntries(res.data);
     } catch {
       toast.error("Failed to load entries");
     }

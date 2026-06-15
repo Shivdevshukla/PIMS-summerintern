@@ -5,7 +5,7 @@ const verifyToken = require("../middleware/auth");
 
 const router = express.Router();
 
-router.get("/excel", async (req, res) => {
+router.get("/excel",verifyToken, async (req, res) => {
   try {
 
     const [rows] =
