@@ -94,7 +94,7 @@ export default function ReportsDashboard() {
   const loadReports = async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
     try {
-      const res = await api.get("/entries");
+      const res = await api.get("/entries/all/reports");
       setAllEntries(res.data);
     } catch (err) {
       console.error(err);

@@ -190,6 +190,25 @@ router.get('/', verifyToken, async (req, res) => {
   }
 });
 
+// ========================
+// GET ALL ENTRIES (UNFILTERED) — for Reports / Activity dashboards
+// GET /api/entries/all/reports
+// Returns every entry regardless of role/status, so charts and
+// analytics reflect the full dataset, not just "pending for me".
+// ⚠️ Must be declared BEFORE GET /:id, otherwise Express treats
+//    "all" as an :id param.
+// ========================
+router.get('/all/reports', verifyToken, async (req, res) => {
+  try {
+    const [rows] = await db.query(
+      'SELECT * FROM production_entries ORDER BY created_at DESC'
+    );
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // GET ENTRY BY ID
 router.get('/:id', verifyToken, async (req, res) => {
   try {
