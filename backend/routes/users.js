@@ -257,4 +257,102 @@ router.delete('/:id', verifyToken, async (req, res) => {
 
 });
 
+
+// ── WORKER LINKING ───────────────────────────────────────────────────────────
+
+// GET /api/users/unlinked-workers
+// Returns workers that don't have a user_id linked yet
+router.get('/unlinked-workers', verifyToken, async (req, res) => {
+  if (req.user.role !== 'admin')
+    return res.status(403).json({ error: 'Admin Access Only' });
+
+  try {
+    const [rows] = await db.query(
+      `SELECT id, name, code, department, designation
+       FROM workers
+       WHERE active = 1 AND (user_id IS NULL)
+       ORDER BY name`
+    );
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/users/worker-users
+// Returns users with role=worker and their linked worker info
+router.get('/worker-users', verifyToken, async (req, res) => {
+  if (req.user.role !== 'admin')
+    return res.status(403).json({ error: 'Admin Access Only' });
+
+  try {
+    const [rows] = await db.query(
+      `SELECT
+         u.id AS user_id, u.name AS user_name, u.email, u.created_at,
+         w.id AS worker_id, w.name AS worker_name, w.code, w.department, w.designation
+       FROM users u
+       LEFT JOIN workers w ON w.user_id = u.id AND w.active = 1
+       WHERE u.role = 'worker'
+       ORDER BY u.name`
+    );
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/users/link-worker
+// Links a users.id (worker role) to a workers.id row
+router.post('/link-worker', verifyToken, async (req, res) => {
+  if (req.user.role !== 'admin')
+    return res.status(403).json({ error: 'Admin Access Only' });
+
+  const { user_id, worker_id } = req.body;
+  if (!user_id || !worker_id)
+    return res.status(400).json({ error: 'user_id and worker_id are required' });
+
+  try {
+    // Make sure this worker isn't already linked to someone else
+    const [[existing]] = await db.query(
+      'SELECT user_id FROM workers WHERE id = ?', [worker_id]
+    );
+    if (!existing)
+      return res.status(404).json({ error: 'Worker not found' });
+    if (existing.user_id && existing.user_id !== Number(user_id))
+      return res.status(409).json({ error: 'This worker is already linked to another account' });
+
+    // Unlink any previous worker linked to this user_id
+    await db.query(
+      'UPDATE workers SET user_id = NULL WHERE user_id = ?', [user_id]
+    );
+
+    // Link
+    await db.query(
+      'UPDATE workers SET user_id = ? WHERE id = ?', [user_id, worker_id]
+    );
+
+    res.json({ message: 'Worker linked successfully' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// DELETE /api/users/link-worker/:user_id
+// Removes the link between a worker login and their workers row
+router.delete('/link-worker/:user_id', verifyToken, async (req, res) => {
+  if (req.user.role !== 'admin')
+    return res.status(403).json({ error: 'Admin Access Only' });
+
+  try {
+    await db.query(
+      'UPDATE workers SET user_id = NULL WHERE user_id = ?',
+      [req.params.user_id]
+    );
+    res.json({ message: 'Worker unlinked successfully' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
 module.exports = router;

@@ -10,15 +10,17 @@ const ROLE_OPTIONS = [
   { value: "superintendent", label: "Superintendent" },
   { value: "hr", label: "HR" },
   { value: "admin", label: "Admin" },
+  { value: "worker", label: "Worker (Self-Service)" },
 ];
 
 const roleBadge = (role) => {
   const map = {
-    admin: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
-    hr: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
-    hod: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400",
+    admin:          "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+    hr:             "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
+    hod:            "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400",
     superintendent: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
     shift_incharge: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+    worker:         "bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400",
   };
   return map[role] || "bg-gray-100 text-gray-700";
 };
@@ -35,6 +37,13 @@ function UserManagement() {
   });
   const [showPassword, setShowPassword] = useState(false);
 
+  // ── Worker portal linking state ──
+  const [workerUsers,      setWorkerUsers]      = useState([]);  // users with role=worker
+  const [unlinkedWorkers,  setUnlinkedWorkers]  = useState([]);  // workers with no login
+  const [linkForm,         setLinkForm]         = useState({ user_id: "", worker_id: "" });
+  const [linkLoading,      setLinkLoading]      = useState(false);
+  const [workerTabLoading, setWorkerTabLoading] = useState(false);
+
   const fetchUsers = async () => {
     setLoading(true);
     try {
@@ -50,7 +59,55 @@ function UserManagement() {
 
   useEffect(() => {
     fetchUsers();
+    fetchWorkerPortalData();
   }, []);
+
+  const fetchWorkerPortalData = async () => {
+    setWorkerTabLoading(true);
+    try {
+      const [wuRes, uwRes] = await Promise.all([
+        api.get("/users/worker-users"),
+        api.get("/users/unlinked-workers"),
+      ]);
+      setWorkerUsers(wuRes.data);
+      setUnlinkedWorkers(uwRes.data);
+    } catch (err) {
+      console.error("Worker portal data error:", err);
+    }
+    setWorkerTabLoading(false);
+  };
+
+  const linkWorker = async (e) => {
+    e.preventDefault();
+    if (!linkForm.user_id || !linkForm.worker_id)
+      return toast.warning("Select both a worker login and a worker profile");
+
+    setLinkLoading(true);
+    try {
+      await api.post("/users/link-worker", {
+        user_id:   Number(linkForm.user_id),
+        worker_id: Number(linkForm.worker_id),
+      });
+      toast.success("Worker linked! They can now log in and see their entries.");
+      setLinkForm({ user_id: "", worker_id: "" });
+      fetchWorkerPortalData();
+    } catch (err) {
+      toast.error(err.response?.data?.error || "Failed to link worker");
+    }
+    setLinkLoading(false);
+  };
+
+  const unlinkWorker = async (userId, name) => {
+    if (!window.confirm(`Remove portal access for ${name}? They will no longer be able to log in to the worker portal.`))
+      return;
+    try {
+      await api.delete(`/users/link-worker/${userId}`);
+      toast.success(`${name} unlinked from worker portal`);
+      fetchWorkerPortalData();
+    } catch (err) {
+      toast.error(err.response?.data?.error || "Failed to unlink worker");
+    }
+  };
 
   const addUser = async (e) => {
     e.preventDefault();
@@ -230,6 +287,159 @@ function UserManagement() {
     </p>
   </div>
 </div>
+
+      {/* ── Worker Portal Management ── */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 mb-6">
+        <div className="flex items-center gap-3 mb-1">
+          <div className="w-8 h-8 rounded-lg bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center">
+            <span className="text-teal-600 dark:text-teal-400 text-sm font-bold">W</span>
+          </div>
+          <div>
+            <h2 className="text-lg font-semibold text-gray-700 dark:text-gray-200">Worker Portal Management</h2>
+            <p className="text-xs text-gray-400 dark:text-gray-500">
+              Create a worker login (role = Worker) then link it to their production worker profile below
+            </p>
+          </div>
+        </div>
+
+        {/* How it works banner */}
+        <div className="mt-4 mb-5 bg-teal-50 dark:bg-teal-900/20 border border-teal-100 dark:border-teal-800 rounded-xl px-4 py-3">
+          <p className="text-xs font-semibold text-teal-700 dark:text-teal-300 mb-2">How to give a worker portal access — 2 steps:</p>
+          <div className="flex flex-wrap gap-3">
+            {[
+              { step: "1", text: 'Use "Add New User" above — set role to "Worker (Self-Service)" and set a password' },
+              { step: "2", text: 'Use the Link form below — connect that login to their production worker profile' },
+            ].map(({ step, text }) => (
+              <div key={step} className="flex items-start gap-2 text-xs text-teal-700 dark:text-teal-300">
+                <span className="w-5 h-5 rounded-full bg-teal-500 text-white flex items-center justify-center font-bold shrink-0">{step}</span>
+                <span>{text}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Link form */}
+        <form onSubmit={linkWorker} className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5">
+              Worker Login Account
+            </label>
+            <select
+              value={linkForm.user_id}
+              onChange={e => setLinkForm(f => ({ ...f, user_id: e.target.value }))}
+              className={inputClass}
+            >
+              <option value="">— Select worker login —</option>
+              {workerUsers.map(wu => (
+                <option key={wu.user_id} value={wu.user_id}>
+                  {wu.user_name} ({wu.email})
+                  {wu.worker_id ? " ✓ Linked" : " — Not linked"}
+                </option>
+              ))}
+            </select>
+            {workerUsers.length === 0 && !workerTabLoading && (
+              <p className="text-[10px] text-gray-400 mt-1">No worker-role users yet. Add one above first.</p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5">
+              Worker Profile (from Workers list)
+            </label>
+            <select
+              value={linkForm.worker_id}
+              onChange={e => setLinkForm(f => ({ ...f, worker_id: e.target.value }))}
+              className={inputClass}
+            >
+              <option value="">— Select worker profile —</option>
+              {unlinkedWorkers.map(w => (
+                <option key={w.id} value={w.id}>
+                  {w.name} — {w.code} {w.department ? `(${w.department})` : ""}
+                </option>
+              ))}
+            </select>
+            {unlinkedWorkers.length === 0 && !workerTabLoading && (
+              <p className="text-[10px] text-gray-400 mt-1">All workers are already linked.</p>
+            )}
+          </div>
+
+          <div className="flex items-end">
+            <button
+              type="submit"
+              disabled={linkLoading || !linkForm.user_id || !linkForm.worker_id}
+              className="w-full bg-teal-600 hover:bg-teal-700 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold rounded-lg px-4 py-3 transition text-sm"
+            >
+              {linkLoading ? "Linking…" : "🔗 Link Worker to Login"}
+            </button>
+          </div>
+        </form>
+
+        {/* Currently linked workers */}
+        <div>
+          <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-300 mb-3">
+            Worker Portal Accounts
+            <span className="ml-2 text-xs font-normal text-gray-400">({workerUsers.length})</span>
+          </h3>
+
+          {workerTabLoading ? (
+            <div className="text-center py-6 text-gray-400 text-sm animate-pulse">Loading…</div>
+          ) : workerUsers.length === 0 ? (
+            <div className="text-center py-8 text-gray-400 text-sm bg-gray-50 dark:bg-slate-700/30 rounded-xl">
+              No worker portal accounts yet. Add a user with "Worker" role above.
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-xs text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-gray-700">
+                    <th className="px-4 py-2.5 font-semibold">Login Name</th>
+                    <th className="px-4 py-2.5 font-semibold">Email</th>
+                    <th className="px-4 py-2.5 font-semibold">Linked Worker Profile</th>
+                    <th className="px-4 py-2.5 font-semibold">Worker Code</th>
+                    <th className="px-4 py-2.5 font-semibold">Department</th>
+                    <th className="px-4 py-2.5 font-semibold">Status</th>
+                    <th className="px-4 py-2.5 font-semibold">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {workerUsers.map(wu => (
+                    <tr key={wu.user_id} className="border-b border-gray-50 dark:border-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700/40 transition-colors">
+                      <td className="px-4 py-3 font-medium text-gray-800 dark:text-white">{wu.user_name}</td>
+                      <td className="px-4 py-3 text-gray-500 dark:text-gray-400 text-xs">{wu.email}</td>
+                      <td className="px-4 py-3 font-medium text-gray-700 dark:text-gray-200">
+                        {wu.worker_name || <span className="text-orange-500 text-xs font-semibold">⚠ Not linked</span>}
+                      </td>
+                      <td className="px-4 py-3 text-gray-500 dark:text-gray-400 text-xs">{wu.code || "—"}</td>
+                      <td className="px-4 py-3 text-gray-500 dark:text-gray-400 text-xs">{wu.department || "—"}</td>
+                      <td className="px-4 py-3">
+                        {wu.worker_id ? (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 px-2 py-0.5 rounded-full">
+                            ✓ Active
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 px-2 py-0.5 rounded-full">
+                            ⚠ Needs linking
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        {wu.worker_id && (
+                          <button
+                            onClick={() => unlinkWorker(wu.user_id, wu.user_name)}
+                            className="text-xs font-medium text-red-500 hover:text-red-700 hover:underline transition-colors"
+                          >
+                            Unlink
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
       {/* Users Table */}
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
@@ -303,8 +513,7 @@ function UserManagement() {
                           </option>
                         ))}
                       </select>
-                    </td>
-                    <td className="px-4 py-3">
+                    </td>                    <td className="px-4 py-3">
                       <div className="flex gap-2 justify-center">
                         <button
                           onClick={() => resetPassword(user.id, user.name)}

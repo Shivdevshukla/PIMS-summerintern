@@ -43,6 +43,7 @@ export default function Login() {
       superintendent: "/superintendent-dashboard",
       hr: "/hr-dashboard",
       admin: "/",
+      worker: "/worker-portal",
     };
     return map[role] || "/";
   };

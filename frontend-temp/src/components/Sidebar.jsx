@@ -22,6 +22,7 @@ const ROLE_COLORS = {
   superintendent: "from-orange-500 to-amber-600",
   hr: "from-emerald-600 to-teal-600",
   admin: "from-slate-700 to-slate-900",
+  worker: "from-teal-500 to-cyan-600",
 };
 
 export default function Sidebar() {
@@ -124,6 +125,13 @@ export default function Sidebar() {
             <Item to="/workers" icon="workers" label="Worker Management" />
             <Item to="/users" icon="users" label="User Management" />
             <Item to="/activity-log" icon="activity" label="Activity Log" />
+          </>
+        )}
+
+        {user?.role === "worker" && (
+          <>
+            <p className="px-4 pt-2 pb-1 text-[10px] font-bold text-gray-400 uppercase tracking-widest">My Portal</p>
+            <Item to="/worker-portal" icon="dashboard" label="My Incentives" end />
           </>
         )}
 

@@ -16,6 +16,7 @@ import Workers                from "./pages/Workers";
 import UserManagement         from "./pages/UserManagement";
 import ChangePassword         from "./pages/ChangePassword";
 import ActivityLog            from "./pages/ActivityLog"; // NEW
+import WorkerPortal           from "./pages/WorkerPortal"; // NEW
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 
@@ -49,6 +50,7 @@ export default function App() {
           <Route path="users"                   element={<UserManagement />} />
           <Route path="change-password"         element={<ChangePassword />} />
           <Route path="activity-log"            element={<ActivityLog />} />  {/* NEW */}
+          <Route path="worker-portal"           element={<WorkerPortal />} /> {/* NEW */}
         </Route>
       </Routes>
 
