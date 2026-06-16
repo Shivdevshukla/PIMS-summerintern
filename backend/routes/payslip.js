@@ -133,6 +133,140 @@ router.get('/bulk', verifyToken, async (req, res) => {
 });
 
 // ========================
+// MONTHLY PAYSLIP
+// GET /api/payslip/monthly/:month   e.g. /api/payslip/monthly/2026-06
+// Worker sees their own approved entries for that month as one PDF
+// ⚠️ Must be declared BEFORE /:entry_id
+// ========================
+router.get('/monthly/:month', verifyToken, async (req, res) => {
+  try {
+    const { month } = req.params; // "YYYY-MM"
+
+    // Resolve worker name
+    const [[worker]] = await db.query(
+      'SELECT name FROM workers WHERE name = ? AND active = 1',
+      [req.user.name]
+    );
+    if (!worker) return res.status(404).json({ error: 'Worker profile not linked.' });
+
+    const [entries] = await db.query(
+      `SELECT * FROM production_entries
+       WHERE status = 'approved'
+         AND FIND_IN_SET(?, REPLACE(worker_name, ', ', ','))
+         AND DATE_FORMAT(shift_date, '%Y-%m') = ?
+       ORDER BY shift_date ASC`,
+      [worker.name, month]
+    );
+
+    if (!entries.length)
+      return res.status(404).json({ error: 'No approved entries for this month.' });
+
+    const monthLabel = new Date(month + '-01').toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+    const totalIncentive = entries.reduce((s, e) => s + Number(e.incentive_amount), 0);
+
+    const doc = new PDFDocument({ margin: 50, size: 'A4', autoFirstPage: false });
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="payslip-${worker.name.replace(/ /g,'-')}-${month}.pdf"`);
+    doc.pipe(res);
+
+    const PRIMARY = '#1d4ed8', GRAY = '#6b7280', LIGHT = '#f3f4f6', GREEN = '#16a34a';
+    const PAGE_W = 495;
+
+    // ── Cover / Summary page ──
+    doc.addPage();
+    doc.rect(0, 0, doc.page.width, 90).fill(PRIMARY);
+    doc.fillColor('white').fontSize(20).font('Helvetica-Bold')
+      .text('PIMS — Monthly Incentive Payslip', 50, 22);
+    doc.fontSize(10).font('Helvetica')
+      .text(`${worker.name}  ·  ${monthLabel}`, 50, 52);
+    doc.fillColor('white').fontSize(9)
+      .text(`Generated: ${new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}`,
+        0, 52, { align: 'right', width: doc.page.width - 50 });
+
+    let y = 110;
+    // Summary box
+    doc.rect(50, y, PAGE_W, 50).fill('#dcfce7');
+    doc.fillColor(GRAY).fontSize(9).font('Helvetica')
+      .text('Total Entries', 70, y + 10).text('Total Incentive Earned', 270, y + 10);
+    doc.fillColor('#111827').fontSize(18).font('Helvetica-Bold')
+      .text(String(entries.length), 70, y + 24);
+    doc.fillColor(GREEN).fontSize(18).font('Helvetica-Bold')
+      .text(`₹${totalIncentive.toLocaleString('en-IN')}`, 270, y + 24);
+    y += 68;
+
+    // Entry list on cover
+    doc.rect(50, y, PAGE_W, 24).fill(LIGHT);
+    doc.fillColor(PRIMARY).fontSize(9).font('Helvetica-Bold')
+      .text('OC #', 58, y + 8).text('Date', 150, y + 8).text('Shift', 240, y + 8)
+      .text('Qty', 300, y + 8).text('Incentive', 380, y + 8);
+    y += 28;
+
+    entries.forEach((e, i) => {
+      if (i % 2 === 0) doc.rect(50, y - 3, PAGE_W, 18).fill('#f9fafb');
+      doc.fillColor('#111827').fontSize(8.5).font('Helvetica')
+        .text(`#${e.oc_number}`, 58, y)
+        .text(new Date(e.shift_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }), 150, y)
+        .text(e.shift, 240, y)
+        .text(String(e.production_quantity), 300, y)
+        .text(`₹${Number(e.incentive_amount).toLocaleString('en-IN')}`, 380, y);
+      y += 18;
+    });
+
+    // ── One page per entry ──
+    entries.forEach((entry) => {
+      doc.addPage();
+      doc.rect(0, 0, doc.page.width, 80).fill(PRIMARY);
+      doc.fillColor('white').fontSize(16).font('Helvetica-Bold')
+        .text('Production Incentive Payslip', 50, 18);
+      doc.fontSize(9).font('Helvetica')
+        .text(`${worker.name}  ·  ${monthLabel}  ·  OC #${entry.oc_number}`, 50, 44);
+
+      let ey = 100;
+      const sh = (title) => {
+        doc.rect(50, ey, PAGE_W, 22).fill(LIGHT);
+        doc.fillColor(PRIMARY).fontSize(9).font('Helvetica-Bold').text(title.toUpperCase(), 58, ey + 7);
+        ey += 28;
+      };
+      const row = (label, value, vc = '#111827') => {
+        doc.fillColor(GRAY).fontSize(8.5).font('Helvetica').text(label, 58, ey, { width: PAGE_W / 2 - 10 });
+        doc.fillColor(vc).fontSize(8.5).font('Helvetica-Bold')
+          .text(String(value || '—'), 58 + PAGE_W / 2, ey, { width: PAGE_W / 2 - 10, align: 'right' });
+        ey += 17;
+      };
+
+      sh('Entry Details');
+      row('OC Number', `#${entry.oc_number}`);
+      row('Machine / Dept', `${entry.machine_id} · ${entry.dept_section}`);
+      row('Shift', `${entry.shift} (${entry.working_hours} hrs)`);
+      row('Shift Date', new Date(entry.shift_date).toLocaleDateString('en-IN'));
+      ey += 6;
+      sh('Production');
+      row('Workers', entry.worker_name);
+      row('Production Quantity', entry.production_quantity);
+      row('Raw Material', `${entry.raw_material_used ?? 0} kg`);
+      ey += 6;
+      sh('Incentive');
+      doc.rect(50, ey, PAGE_W, 34).fill('#dcfce7');
+      doc.fillColor(GRAY).fontSize(9).font('Helvetica').text('Incentive Amount', 58, ey + 11);
+      doc.fillColor(GREEN).fontSize(15).font('Helvetica-Bold')
+        .text(`₹${Number(entry.incentive_amount).toLocaleString('en-IN')}`, 0, ey + 9,
+          { align: 'right', width: doc.page.width - 58 });
+      ey += 44;
+
+      doc.rect(0, doc.page.height - 36, doc.page.width, 36).fill(LIGHT);
+      doc.fillColor(GRAY).fontSize(7.5).font('Helvetica')
+        .text('System-generated payslip · PIMS, Universal Cables Limited', 50, doc.page.height - 22,
+          { align: 'center', width: PAGE_W });
+    });
+
+    doc.end();
+  } catch (err) {
+    console.error('Monthly payslip error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ========================
 // SINGLE ENTRY PAYSLIP
 // GET /api/payslip/:entry_id
 // HR, Admin, Shift Incharge (own entries), Worker (own name in entry)
@@ -155,8 +289,8 @@ router.get('/:entry_id', verifyToken, async (req, res) => {
 
     if (!allowed && req.user.role === 'worker') {
       const [[worker]] = await db.query(
-        'SELECT name FROM workers WHERE user_id = ? AND active = 1',
-        [req.user.id]
+        'SELECT name FROM workers WHERE name = ? AND active = 1',
+        [req.user.name]
       );
       if (worker) {
         const names = (entry.worker_name || '')

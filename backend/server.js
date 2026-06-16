@@ -15,6 +15,7 @@ const notificationRoutes = require('./routes/notifications');
 const auditRoutes        = require('./routes/audit');
 const profileRoutes      = require('./routes/profile');
 const payslipRoutes      = require('./routes/payslip');  // ← ADD
+const workerPortalRoutes = require('./routes/workerPortal');
 
 const app = express();
 
@@ -33,6 +34,7 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/audit',         auditRoutes);
 app.use('/api/profile',       profileRoutes);
 app.use('/api/payslip',       payslipRoutes);  // ← ADD
+app.use('/api/worker-portal', workerPortalRoutes);
 
 app.get('/', (req, res) => res.send('PIMS Backend Running...'));
 

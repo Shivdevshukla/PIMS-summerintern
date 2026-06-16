@@ -24,13 +24,13 @@ function workerOnly(req, res, next) {
 router.get('/profile', verifyToken, workerOnly, async (req, res) => {
   try {
     const [[worker]] = await db.query(
-      'SELECT id, name, code, department, designation FROM workers WHERE user_id = ? AND active = 1',
-      [req.user.id]
+      'SELECT id, name, code, department, designation FROM workers WHERE name = ? AND active = 1',
+      [req.user.name]
     );
 
     if (!worker) {
       return res.status(404).json({
-        error: 'Worker profile not found. Contact HR to link your account.',
+        error: 'Worker profile not found. Contact HR to ensure your account name matches the workers list.',
       });
     }
 
@@ -50,8 +50,8 @@ router.get('/entries', verifyToken, workerOnly, async (req, res) => {
   try {
     // First resolve this user's worker name
     const [[worker]] = await db.query(
-      'SELECT name FROM workers WHERE user_id = ? AND active = 1',
-      [req.user.id]
+      'SELECT name FROM workers WHERE name = ? AND active = 1',
+      [req.user.name]
     );
 
     if (!worker) {
@@ -96,8 +96,8 @@ router.get('/entries', verifyToken, workerOnly, async (req, res) => {
 router.get('/summary', verifyToken, workerOnly, async (req, res) => {
   try {
     const [[worker]] = await db.query(
-      'SELECT name FROM workers WHERE user_id = ? AND active = 1',
-      [req.user.id]
+      'SELECT name FROM workers WHERE name = ? AND active = 1',
+      [req.user.name]
     );
 
     if (!worker) {

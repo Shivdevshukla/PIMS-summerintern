@@ -80,6 +80,44 @@ function PayslipBtn({ entryId, ocNumber }) {
   );
 }
 
+// ── Monthly Payslip download button ──────────────────────────
+function MonthlyPayslipBtn({ month, monthLabel }) {
+  const [loading, setLoading] = useState(false);
+
+  const download = async () => {
+    setLoading(true);
+    try {
+      const res = await api.get(`/payslip/monthly/${month}`, { responseType: "blob" });
+      const url = URL.createObjectURL(new Blob([res.data], { type: "application/pdf" }));
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `payslip-${monthLabel.replace(/ /g, "-")}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      toast.success(`Payslip for ${monthLabel} downloaded`);
+    } catch {
+      toast.error("Failed to download monthly payslip");
+    }
+    setLoading(false);
+  };
+
+  return (
+    <button
+      onClick={download}
+      disabled={loading}
+      className="flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1.5 rounded-lg
+        bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/40
+        text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800
+        transition-colors disabled:opacity-60"
+    >
+      {loading ? <FaSpinner size={10} className="animate-spin" /> : <FaFilePdf size={10} />}
+      {loading ? "…" : "PDF"}
+    </button>
+  );
+}
+
 // ── Main ──────────────────────────────────────────────────────
 export default function WorkerPortal() {
   const { user } = useSelector((s) => s.auth);
@@ -288,6 +326,7 @@ export default function WorkerPortal() {
                   <th className="px-5 py-3 font-semibold">Entries</th>
                   <th className="px-5 py-3 font-semibold">Production</th>
                   <th className="px-5 py-3 font-semibold">Incentive Earned</th>
+                  <th className="px-5 py-3 font-semibold">Payslip</th>
                 </tr>
               </thead>
               <tbody>
@@ -298,6 +337,9 @@ export default function WorkerPortal() {
                     <td className="px-5 py-3 text-gray-600 dark:text-gray-300">{Number(m.total_qty).toLocaleString("en-IN")}</td>
                     <td className="px-5 py-3 font-bold text-green-700 dark:text-green-400">
                       ₹{Number(m.total_incentive).toLocaleString("en-IN")}
+                    </td>
+                    <td className="px-5 py-3">
+                      <MonthlyPayslipBtn month={m.month} monthLabel={m.month_label} />
                     </td>
                   </tr>
                 ))}
