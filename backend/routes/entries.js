@@ -38,14 +38,13 @@ function duplicateMessage(oc_number, shift, shift_date, duplicate) {
 // ========================
 // CHECK OC NUMBER (live validation while typing)
 // GET /api/entries/check-oc?oc_number=1256&shift_date=2026-06-15&shift=A
-// ⚠️ Must be declared BEFORE GET /:id, otherwise Express treats
-//    "check-oc" as an :id param.
+// ⚠️ Must be declared BEFORE GET /:id
 // ========================
 router.get('/check-oc', verifyToken, async (req, res) => {
   const { oc_number, shift_date, shift } = req.query;
 
   if (!oc_number || !shift_date || !shift) {
-    return res.json({ duplicate: false }); // not enough info yet — don't block typing
+    return res.json({ duplicate: false });
   }
 
   try {
@@ -66,7 +65,30 @@ router.get('/check-oc', verifyToken, async (req, res) => {
   }
 });
 
+// ========================
+// GET ALL ENTRIES (UNFILTERED) — for Reports / Activity dashboards
+// GET /api/entries/all/reports
+// ⚠️ Must be declared BEFORE GET /:id, otherwise Express treats
+//    "all" as an :id param.
+// ========================
+router.get('/all/reports', verifyToken, async (req, res) => {
+  try {
+    const [rows] = await db.query(
+      `SELECT pe.*, u.name as submitted_by_name
+       FROM production_entries pe
+       LEFT JOIN users u ON pe.shift_incharge_id = u.id
+       ORDER BY pe.created_at DESC`
+    );
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ========================
 // CREATE ENTRY
+// POST /api/entries
+// ========================
 router.post('/', verifyToken, async (req, res) => {
   if (req.user.role !== 'shift_incharge')
     return res.status(403).json({ error: 'Only Shift Incharge can create entries' });
@@ -88,8 +110,10 @@ router.post('/', verifyToken, async (req, res) => {
   if (!oc_number)          missing.push('oc_number');
   if (!shift_date)         missing.push('shift_date');
   if (!shift)              missing.push('shift');
-  if (!production_quantity || Number(production_quantity) <= 0) missing.push('production_quantity');
-  if (!working_hours || Number(working_hours) <= 0) missing.push('working_hours');
+  if (!production_quantity || Number(production_quantity) <= 0)
+    missing.push('production_quantity');
+  if (!working_hours || Number(working_hours) <= 0)
+    missing.push('working_hours');
 
   if (missing.length > 0)
     return res.status(400).json({ error: `Missing fields: ${missing.join(', ')}` });
@@ -123,13 +147,13 @@ router.post('/', verifyToken, async (req, res) => {
 
     const entryId = result.insertId;
 
-    // Audit: submitted
+    // Audit log
     await logAction({
-      entry_id:   entryId,
-      actor_id:   req.user.id,
-      actor_name: req.user.name,
-      actor_role: 'shift_incharge',
-      action:     'submitted',
+      entry_id:    entryId,
+      actor_id:    req.user.id,
+      actor_name:  req.user.name,
+      actor_role:  'shift_incharge',
+      action:      'submitted',
       from_status: '',
       to_status:   'pending_hod',
       remarks:     remarks || null,
@@ -140,26 +164,24 @@ router.post('/', verifyToken, async (req, res) => {
 
     res.status(201).json({ success: true, message: 'Entry submitted for HOD approval' });
   } catch (err) {
-    // Safety net: DB-level unique constraint (race condition between
-    // the pre-check above and the insert — e.g. two Shift Incharges
-    // submitting the same OC at the exact same moment)
     if (err.code === 'ER_DUP_ENTRY') {
       return res.status(409).json({
         error: `OC #${trimmedOcNumber} is already logged for Shift ${shift} on this date. `
-             + `Please refresh and verify before re-entering this entry.`,
+             + `Please refresh and verify before re-entering.`,
       });
     }
-
     console.error(err);
     res.status(500).json({ error: err.message });
   }
 });
 
-// GET ALL ENTRIES — filtered by role on the backend
+// ========================
+// GET ALL ENTRIES — filtered by role
+// GET /api/entries
+// ========================
 router.get('/', verifyToken, async (req, res) => {
   const { role, id } = req.user;
 
-  // Map each approver role to the exact status they should see
   const ROLE_STATUS = {
     hod:            'pending_hod',
     superintendent: 'pending_superintendent',
@@ -170,15 +192,12 @@ router.get('/', verifyToken, async (req, res) => {
   const args = [];
 
   if (role === 'shift_incharge') {
-    // Shift incharge sees only their own submissions (all statuses)
     query += ' WHERE shift_incharge_id = ?';
     args.push(id);
   } else if (ROLE_STATUS[role]) {
-    // HOD / Superintendent / HR each see only entries awaiting their action
     query += ' WHERE status = ?';
     args.push(ROLE_STATUS[role]);
   }
-  // admin and any other roles get everything (no WHERE clause)
 
   query += ' ORDER BY created_at DESC';
 
@@ -191,43 +210,8 @@ router.get('/', verifyToken, async (req, res) => {
 });
 
 // ========================
-// GET ALL ENTRIES (UNFILTERED) — for Reports / Activity dashboards
-// GET /api/entries/all/reports
-// Returns every entry regardless of role/status, so charts and
-// analytics reflect the full dataset, not just "pending for me".
-// ⚠️ Must be declared BEFORE GET /:id, otherwise Express treats
-//    "all" as an :id param.
-// ========================
-router.get('/all/reports', verifyToken, async (req, res) => {
-  try {
-    const [rows] = await db.query(
-      'SELECT * FROM production_entries ORDER BY created_at DESC'
-    );
-    res.json(rows);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// GET ENTRY BY ID
-router.get('/:id', verifyToken, async (req, res) => {
-  try {
-    const [rows] = await db.query(
-      'SELECT * FROM production_entries WHERE id = ?', [req.params.id]
-    );
-    if (!rows.length) return res.status(404).json({ error: 'Entry not found' });
-    res.json(rows[0]);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// ========================
 // RESUBMIT A REJECTED ENTRY
 // PUT /api/entries/:id/resubmit
-// Shift Incharge edits a rejected entry and pushes it back to pending_hod.
-// Clears all approval/rejection trail fields so it goes through the
-// full workflow again (HOD -> Superintendent -> HR).
 // ========================
 router.put('/:id/resubmit', verifyToken, async (req, res) => {
   if (req.user.role !== 'shift_incharge')
@@ -250,8 +234,10 @@ router.put('/:id/resubmit', verifyToken, async (req, res) => {
   if (!oc_number)          missing.push('oc_number');
   if (!shift_date)         missing.push('shift_date');
   if (!shift)              missing.push('shift');
-  if (!production_quantity || Number(production_quantity) <= 0) missing.push('production_quantity');
-  if (!working_hours || Number(working_hours) <= 0) missing.push('working_hours');
+  if (!production_quantity || Number(production_quantity) <= 0)
+    missing.push('production_quantity');
+  if (!working_hours || Number(working_hours) <= 0)
+    missing.push('working_hours');
 
   if (missing.length > 0)
     return res.status(400).json({ error: `Missing fields: ${missing.join(', ')}` });
@@ -264,11 +250,16 @@ router.put('/:id/resubmit', verifyToken, async (req, res) => {
       [req.params.id]
     );
 
-    if (!entry) return res.status(404).json({ error: 'Entry not found' });
+    if (!entry)
+      return res.status(404).json({ error: 'Entry not found' });
+
     if (entry.shift_incharge_id !== req.user.id)
       return res.status(403).json({ error: 'You can only resubmit your own entries' });
+
     if (entry.status !== 'rejected')
-      return res.status(409).json({ error: `Only rejected entries can be resubmitted (current status: ${entry.status})` });
+      return res.status(409).json({
+        error: `Only rejected entries can be resubmitted (current status: ${entry.status})`
+      });
 
     const duplicate = await findDuplicateOC(trimmedOcNumber, shift_date, shift, entry.id);
     if (duplicate) {
@@ -300,11 +291,11 @@ router.put('/:id/resubmit', verifyToken, async (req, res) => {
     );
 
     await logAction({
-      entry_id:   entry.id,
-      actor_id:   req.user.id,
-      actor_name: req.user.name,
-      actor_role: 'shift_incharge',
-      action:     'resubmitted',
+      entry_id:    entry.id,
+      actor_id:    req.user.id,
+      actor_name:  req.user.name,
+      actor_role:  'shift_incharge',
+      action:      'resubmitted',
       from_status: 'rejected',
       to_status:   'pending_hod',
       remarks:     remarks || null,
@@ -317,10 +308,28 @@ router.put('/:id/resubmit', verifyToken, async (req, res) => {
     if (err.code === 'ER_DUP_ENTRY') {
       return res.status(409).json({
         error: `OC #${trimmedOcNumber} is already logged for Shift ${shift} on this date. `
-             + `Please refresh and verify before re-entering this entry.`,
+             + `Please refresh and verify before re-entering.`,
       });
     }
     console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ========================
+// GET ENTRY BY ID
+// GET /api/entries/:id
+// ⚠️ Must be LAST — Express will match this for any string
+// ========================
+router.get('/:id', verifyToken, async (req, res) => {
+  try {
+    const [rows] = await db.query(
+      'SELECT * FROM production_entries WHERE id = ?',
+      [req.params.id]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Entry not found' });
+    res.json(rows[0]);
+  } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });

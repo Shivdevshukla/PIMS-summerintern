@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import api from "../api";
 import { toast } from "react-toastify";
+import { useSelector } from "react-redux";
 import {
   Chart as ChartJS,
   ArcElement, Tooltip, Legend,
@@ -10,8 +11,9 @@ import { Pie, Bar, Line } from "react-chartjs-2";
 import {
   FaFileExcel, FaSyncAlt, FaCheckCircle, FaTimesCircle,
   FaHourglassHalf, FaRupeeSign, FaClipboardList, FaIndustry,
-  FaChartBar, FaChartPie, FaChartLine, FaUsers,
+  FaChartBar, FaChartPie, FaChartLine, FaFilePdf,
 } from "react-icons/fa";
+import PayslipButton from "../components/PayslipButton";
 
 ChartJS.register(
   ArcElement, Tooltip, Legend,
@@ -82,12 +84,18 @@ function ChartCard({ title, icon: Icon, children, className = "" }) {
 }
 
 export default function ReportsDashboard() {
+  const { user } = useSelector((s) => s.auth); // ← NEW
   const [allEntries, setAllEntries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [filterDept, setFilterDept] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
   const [exporting, setExporting] = useState(false);
+  const [downloadingPayslips, setDownloadingPayslips] = useState(false); // ← NEW
+
+  // Month filter for approved entries table
+  const [monthFilter, setMonthFilter] = useState("all"); // ← NEW
+  const [sortOrder, setSortOrder] = useState("desc");     // ← NEW
 
   useEffect(() => { loadReports(); }, []);
 
@@ -103,13 +111,11 @@ export default function ReportsDashboard() {
     setRefreshing(false);
   };
 
-  // Unique departments for filter
   const departments = useMemo(() => {
     const depts = [...new Set(allEntries.map(e => e.dept_section).filter(Boolean))].sort();
     return depts;
   }, [allEntries]);
 
-  // Filtered entries
   const entries = useMemo(() => {
     return allEntries.filter(e => {
       const deptOk = filterDept === "all" || e.dept_section === filterDept;
@@ -118,7 +124,6 @@ export default function ReportsDashboard() {
     });
   }, [allEntries, filterDept, filterStatus]);
 
-  // Computed stats
   const stats = useMemo(() => {
     const approved  = entries.filter(e => e.status === "approved").length;
     const rejected  = entries.filter(e => e.status === "rejected").length;
@@ -132,7 +137,6 @@ export default function ReportsDashboard() {
     return { total: entries.length, approved, rejected, pending, incentive, approvedIncentive, approvalRate, totalQty };
   }, [entries]);
 
-  // Monthly entries (sorted correctly)
   const monthlyData = useMemo(() => {
     const map = {};
     entries.forEach(e => {
@@ -143,7 +147,6 @@ export default function ReportsDashboard() {
     return { labels, values: labels.map(m => map[m]) };
   }, [entries]);
 
-  // Monthly incentive (approved only)
   const monthlyIncentive = useMemo(() => {
     const map = {};
     entries.filter(e => e.status === "approved").forEach(e => {
@@ -154,7 +157,6 @@ export default function ReportsDashboard() {
     return { labels, values: labels.map(m => map[m]) };
   }, [entries]);
 
-  // Dept-wise incentive
   const deptIncentive = useMemo(() => {
     const map = {};
     entries.filter(e => e.status === "approved").forEach(e => {
@@ -165,7 +167,6 @@ export default function ReportsDashboard() {
     return { labels: sorted.map(x => x[0]), values: sorted.map(x => x[1]) };
   }, [entries]);
 
-  // Top machines
   const topMachines = useMemo(() => {
     const map = {};
     entries.forEach(e => {
@@ -181,14 +182,43 @@ export default function ReportsDashboard() {
       .map(([machine, data]) => ({ machine, ...data }));
   }, [entries]);
 
+  // ── Month-by-Month breakdown ──────────────────────────── NEW
+  const monthBreakdown = useMemo(() => {
+    const map = {};
+    entries.filter(e => e.status === "approved").forEach(e => {
+      const date = new Date(e.created_at);
+      const key = `${date.toLocaleString("default", { month: "short" })} ${date.getFullYear()}`;
+      if (!map[key]) map[key] = { entries: 0, production: 0, incentive: 0 };
+      map[key].entries += 1;
+      map[key].production += Number(e.production_quantity || 0);
+      map[key].incentive += Number(e.incentive_amount || 0);
+    });
+    return Object.entries(map).sort((a, b) => new Date("1 " + b[0]) - new Date("1 " + a[0]));
+  }, [entries]);
+
+  // ── Approved entries for payslip table ───────────────── NEW
+  const approvedEntries = useMemo(() => {
+    let filtered = entries.filter(e => e.status === "approved");
+    if (monthFilter !== "all") {
+      filtered = filtered.filter(e => {
+        const date = new Date(e.created_at);
+        const key = `${date.toLocaleString("default", { month: "short" })} ${date.getFullYear()}`;
+        return key === monthFilter;
+      });
+    }
+    filtered = [...filtered].sort((a, b) => {
+      const da = new Date(a.created_at), db = new Date(b.created_at);
+      return sortOrder === "desc" ? db - da : da - db;
+    });
+    return filtered;
+  }, [entries, monthFilter, sortOrder]);
+
   const exportExcel = async () => {
     setExporting(true);
     try {
       const res = await api.get("/export/excel", { responseType: "blob" });
       const url = URL.createObjectURL(
-        new Blob([res.data], {
-          type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        })
+        new Blob([res.data], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" })
       );
       const link = document.createElement("a");
       link.href = url;
@@ -201,6 +231,27 @@ export default function ReportsDashboard() {
       toast.error("Export failed");
     }
     setExporting(false);
+  };
+
+  // ── Bulk payslip download (HR/Admin only) ──────────────── NEW
+  const downloadAllPayslips = async () => {
+    setDownloadingPayslips(true);
+    try {
+      toast.info("Generating payslip report...");
+      const res = await api.get("/payslip/bulk", { responseType: "blob" });
+      const url = URL.createObjectURL(new Blob([res.data], { type: "application/pdf" }));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `PIMS_Payslips_${new Date().toISOString().split("T")[0]}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      toast.success("Payslips downloaded!");
+    } catch {
+      toast.error("Failed to generate payslips. Make sure backend /api/payslip/bulk is set up.");
+    }
+    setDownloadingPayslips(false);
   };
 
   if (loading) {
@@ -238,6 +289,19 @@ export default function ReportsDashboard() {
             <FaSyncAlt className={refreshing ? "animate-spin" : ""} size={13} />
             Refresh
           </button>
+
+          {/* ── Download Payslips (HR + Admin only) ── NEW */}
+          {(user?.role === "hr" || user?.role === "admin") && (
+            <button
+              onClick={downloadAllPayslips}
+              disabled={downloadingPayslips}
+              className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 disabled:opacity-70 text-white rounded-xl shadow text-sm font-semibold transition-colors"
+            >
+              <FaFilePdf size={14} />
+              {downloadingPayslips ? "Generating…" : "Download Payslips"}
+            </button>
+          )}
+
           <button
             onClick={exportExcel}
             disabled={exporting}
@@ -309,7 +373,6 @@ export default function ReportsDashboard() {
 
       {/* ── Charts Row 1 ── */}
       <div className="grid lg:grid-cols-2 gap-5">
-
         <ChartCard title="Approval Distribution" icon={FaChartPie}>
           <div className="h-72">
             <Pie
@@ -346,12 +409,10 @@ export default function ReportsDashboard() {
             />
           </div>
         </ChartCard>
-
       </div>
 
       {/* ── Charts Row 2 ── */}
       <div className="grid lg:grid-cols-2 gap-5">
-
         <ChartCard title="Monthly Incentive Released (₹)" icon={FaRupeeSign}>
           <div className="h-72">
             <Bar
@@ -368,13 +429,7 @@ export default function ReportsDashboard() {
                 ...BAR_OPTS,
                 scales: {
                   ...BAR_OPTS.scales,
-                  y: {
-                    ...BAR_OPTS.scales.y,
-                    ticks: {
-                      callback: v => `₹${(v / 1000).toFixed(0)}k`,
-                      font: { size: 11 },
-                    },
-                  },
+                  y: { ...BAR_OPTS.scales.y, ticks: { callback: v => `₹${(v/1000).toFixed(0)}k`, font: { size: 11 } } },
                 },
               }}
             />
@@ -397,17 +452,150 @@ export default function ReportsDashboard() {
                 ...BAR_OPTS,
                 indexAxis: "y",
                 scales: {
-                  x: {
-                    grid: { color: "#f1f5f9" },
-                    ticks: { callback: v => `₹${(v / 1000).toFixed(0)}k`, font: { size: 10 } },
-                  },
+                  x: { grid: { color: "#f1f5f9" }, ticks: { callback: v => `₹${(v/1000).toFixed(0)}k`, font: { size: 10 } } },
                   y: { grid: { display: false }, ticks: { font: { size: 10 } } },
                 },
               }}
             />
           </div>
         </ChartCard>
+      </div>
 
+      {/* ── Month-by-Month Breakdown ── NEW (Picture 2) */}
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow">
+        <div className="flex items-center gap-2 px-5 py-4 border-b border-gray-100 dark:border-slate-700">
+          <FaRupeeSign className="text-green-600 opacity-70" size={14} />
+          <h2 className="text-sm font-bold text-gray-800 dark:text-white">Month-by-Month Breakdown</h2>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-left text-xs text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-slate-700">
+                <th className="px-5 py-3 font-semibold">Month</th>
+                <th className="px-5 py-3 font-semibold">Entries</th>
+                <th className="px-5 py-3 font-semibold">Production</th>
+                <th className="px-5 py-3 font-semibold">Incentive Earned</th>
+              </tr>
+            </thead>
+            <tbody>
+              {monthBreakdown.length > 0 ? monthBreakdown.map(([month, data]) => (
+                <tr key={month} className="border-b border-gray-50 dark:border-slate-700/50 hover:bg-gray-50 dark:hover:bg-slate-700/40 transition-colors">
+                  <td className="px-5 py-3.5 font-semibold text-gray-800 dark:text-white">{month}</td>
+                  <td className="px-5 py-3.5 text-gray-600 dark:text-gray-300">{data.entries}</td>
+                  <td className="px-5 py-3.5 text-gray-600 dark:text-gray-300">{data.production.toLocaleString("en-IN")}</td>
+                  <td className="px-5 py-3.5 font-bold text-green-600 dark:text-green-400">
+                    ₹{data.incentive.toLocaleString("en-IN")}
+                  </td>
+                </tr>
+              )) : (
+                <tr>
+                  <td colSpan="4" className="text-center py-8 text-gray-400 text-sm">No approved entries yet</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* ── My Approved Entries with Payslip ── NEW (Picture 2) */}
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-slate-700 flex-wrap gap-3">
+          <div className="flex items-center gap-2">
+            <FaCheckCircle className="text-green-600 opacity-70" size={14} />
+            <h2 className="text-sm font-bold text-gray-800 dark:text-white">
+              My Approved Entries ({approvedEntries.length})
+            </h2>
+          </div>
+          <div className="flex items-center gap-2">
+            {/* Month filter */}
+            <select
+              value={monthFilter}
+              onChange={e => setMonthFilter(e.target.value)}
+              className="border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-800 dark:text-white text-xs px-2.5 py-1.5 rounded-lg outline-none"
+            >
+              <option value="all">All months</option>
+              {monthBreakdown.map(([m]) => (
+                <option key={m} value={m}>{m}</option>
+              ))}
+            </select>
+            {/* Sort */}
+            <select
+              value={sortOrder}
+              onChange={e => setSortOrder(e.target.value)}
+              className="border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-800 dark:text-white text-xs px-2.5 py-1.5 rounded-lg outline-none"
+            >
+              <option value="desc">Date ↓</option>
+              <option value="asc">Date ↑</option>
+            </select>
+          </div>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-left text-xs text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-slate-700">
+                <th className="px-5 py-3 font-semibold">OC Number</th>
+                <th className="px-5 py-3 font-semibold">Machine / Dept</th>
+                <th className="px-5 py-3 font-semibold">Shift</th>
+                <th className="px-5 py-3 font-semibold">Date</th>
+                <th className="px-5 py-3 font-semibold">Production</th>
+                <th className="px-5 py-3 font-semibold">Incentive</th>
+                <th className="px-5 py-3 font-semibold">Payslip</th>
+              </tr>
+            </thead>
+            <tbody>
+              {approvedEntries.length > 0 ? approvedEntries.map(entry => (
+                <tr key={entry.id} className="border-b border-gray-50 dark:border-slate-700/50 hover:bg-green-50/40 dark:hover:bg-slate-700/40 transition-colors">
+                  <td className="px-5 py-3.5">
+                    <span className="font-semibold text-gray-800 dark:text-white">
+                      #{entry.oc_number}
+                    </span>
+                    <p className="text-xs text-gray-400 mt-0.5">{entry.oc_stage} · {entry.oc_type}</p>
+                  </td>
+                  <td className="px-5 py-3.5">
+                    <p className="font-medium text-gray-700 dark:text-gray-200 text-xs">{entry.machine_id}</p>
+                    <p className="text-xs text-gray-400">{entry.dept_section}</p>
+                  </td>
+                  <td className="px-5 py-3.5">
+                    <span className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-white text-xs font-bold
+                      ${entry.shift === "A" ? "bg-blue-500"
+                      : entry.shift === "B" ? "bg-orange-500"
+                      : entry.shift === "C" ? "bg-purple-500"
+                      : "bg-green-500"}`}>
+                      {entry.shift || "—"}
+                    </span>
+                    <p className="text-xs text-gray-400 mt-0.5">{entry.working_hours}h</p>
+                  </td>
+                  <td className="px-5 py-3.5 text-gray-600 dark:text-gray-300 text-xs">
+                    {new Date(entry.created_at).toLocaleDateString("en-IN", {
+                      day: "2-digit", month: "short", year: "numeric"
+                    })}
+                  </td>
+                  <td className="px-5 py-3.5 font-semibold text-indigo-600 dark:text-indigo-400">
+                    {Number(entry.production_quantity).toLocaleString("en-IN")}
+                  </td>
+                  <td className="px-5 py-3.5 font-bold text-green-600 dark:text-green-400">
+                    ₹{Number(entry.incentive_amount).toLocaleString("en-IN")}
+                  </td>
+                  <td className="px-5 py-3.5">
+                    {/* ── PDF Payslip button per row ── */}
+                    <PayslipButton
+                      entryId={entry.id}
+                      ocNumber={entry.oc_number}
+                      size="sm"
+                      label="PDF"
+                    />
+                  </td>
+                </tr>
+              )) : (
+                <tr>
+                  <td colSpan="7" className="text-center py-10 text-gray-400 text-sm">
+                    No approved entries for selected period
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* ── Top Machines Table ── */}

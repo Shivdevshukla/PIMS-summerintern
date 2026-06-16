@@ -2,26 +2,14 @@ import { useState } from "react";
 import { toast } from "react-toastify";
 import { FaFilePdf, FaSpinner } from "react-icons/fa";
 import api from "../api";
-import PayslipButton from "../components/PayslipButton";
 
-/**
- * PayslipButton
- * Props:
- *   entryId    — production_entries.id
- *   ocNumber   — for the toast message
- *   size       — 'sm' | 'md' (default 'sm')
- *   label      — button text (default 'Payslip')
- */
-export default function PayslipButton({ entryId, ocNumber, size = "sm", label = "Payslip" }) {
+export default function PayslipButton({ entryId, ocNumber, size = "sm", label = "PDF" }) {
   const [loading, setLoading] = useState(false);
 
   const downloadPayslip = async () => {
     setLoading(true);
     try {
-      // Use axios responseType: blob to get the PDF binary
       const res = await api.get(`/payslip/${entryId}`, { responseType: "blob" });
-
-      // Create a temporary download link
       const url = URL.createObjectURL(new Blob([res.data], { type: "application/pdf" }));
       const link = document.createElement("a");
       link.href = url;
@@ -30,7 +18,6 @@ export default function PayslipButton({ entryId, ocNumber, size = "sm", label = 
       link.click();
       link.remove();
       URL.revokeObjectURL(url);
-
       toast.success(`Payslip for OC #${ocNumber} downloaded`);
     } catch (err) {
       toast.error("Failed to generate payslip");
@@ -40,10 +27,7 @@ export default function PayslipButton({ entryId, ocNumber, size = "sm", label = 
   };
 
   const base = "flex items-center gap-1.5 font-semibold transition-colors rounded-lg";
-  const sizes = {
-    sm: "text-xs px-2.5 py-1.5",
-    md: "text-sm px-4 py-2",
-  };
+  const sizes = { sm: "text-xs px-2.5 py-1.5", md: "text-sm px-4 py-2" };
 
   return (
     <button

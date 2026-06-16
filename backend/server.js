@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+
 require('dotenv').config();
 
 const authRoutes         = require('./routes/auth');
@@ -13,8 +14,7 @@ const userRoutes         = require('./routes/users');
 const notificationRoutes = require('./routes/notifications');
 const auditRoutes        = require('./routes/audit');
 const profileRoutes      = require('./routes/profile');
-const payslipRoutes      = require('./routes/payslip');      // NEW (was missing)
-const workerPortalRoutes = require('./routes/workerPortal'); // NEW
+const payslipRoutes      = require('./routes/payslip');  // ← ADD
 
 const app = express();
 
@@ -32,8 +32,7 @@ app.use('/api/users',         userRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/audit',         auditRoutes);
 app.use('/api/profile',       profileRoutes);
-app.use('/api/payslip',       payslipRoutes);      // NEW
-app.use('/api/worker-portal', workerPortalRoutes); // NEW
+app.use('/api/payslip',       payslipRoutes);  // ← ADD
 
 app.get('/', (req, res) => res.send('PIMS Backend Running...'));
 
