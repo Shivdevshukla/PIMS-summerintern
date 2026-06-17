@@ -4,6 +4,7 @@ const path = require('path');
 require('dotenv').config();
 
 const caPath = path.join(__dirname, 'aiven-ca.pem');
+const useSSL = process.env.DB_SSL === 'true' && fs.existsSync(caPath);
 
 const pool = mysql.createPool({
   host: process.env.DB_HOST,
@@ -13,7 +14,7 @@ const pool = mysql.createPool({
   database: process.env.DB_NAME,
   waitForConnections: true,
   connectionLimit: 10,
-  ...(fs.existsSync(caPath) && { ssl: { ca: fs.readFileSync(caPath) } }),
+  ...(useSSL && { ssl: { ca: fs.readFileSync(caPath) } }),
 });
 
 module.exports = pool.promise();
