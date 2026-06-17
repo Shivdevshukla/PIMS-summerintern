@@ -1,5 +1,5 @@
 import { useState } from "react";
-import axios from "axios";
+import api from "../api";
 import { toast } from "react-toastify";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { FaLock, FaEye, FaEyeSlash } from "react-icons/fa";
@@ -21,7 +21,7 @@ export default function ResetPassword() {
 
     try {
       setLoading(true);
-      await axios.post("http://localhost:5000/api/auth/reset-password", { token, newPassword: password });
+await api.post("/auth/reset-password", { token, newPassword: password });
       toast.success("Password reset successful! Please log in.");
       navigate("/login");
     } catch (err) {

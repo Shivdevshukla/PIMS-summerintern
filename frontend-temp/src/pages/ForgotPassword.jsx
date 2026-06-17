@@ -1,5 +1,5 @@
 import { useState } from "react";
-import axios from "axios";
+import api from "../api";
 import { toast } from "react-toastify";
 import { Link } from "react-router-dom";
 import { FaEnvelope, FaArrowLeft } from "react-icons/fa";
@@ -14,7 +14,7 @@ export default function ForgotPassword() {
     if (!email) return toast.warning("Enter your email");
     try {
       setLoading(true);
-      await axios.post("http://localhost:5000/api/auth/forgot-password", { email });
+      await api.post("/auth/forgot-password", { email });
       setSent(true);
       toast.success("Reset link sent if account exists!");
     } catch (err) {

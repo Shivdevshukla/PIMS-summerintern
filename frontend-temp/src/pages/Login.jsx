@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
+import api from "../api";
 import { useDispatch } from "react-redux";
 import { login } from "../store/store";
 import { toast } from "react-toastify";
@@ -53,7 +53,7 @@ export default function Login() {
     if (!email || !password) return toast.warning("Please enter email and password");
     try {
       setLoading(true);
-      const res = await axios.post("http://localhost:5000/api/auth/login", { email, password });
+const res = await api.post("/auth/login", { email, password });
       dispatch(login(res.data));
       toast.success("Login Successful!");
       navigate(roleRedirect(res.data.user?.role));

@@ -5,7 +5,7 @@ import { toast } from "react-toastify";
 import { FaCamera, FaTrash, FaUser } from "react-icons/fa";
 import { login } from "../store/store";
 
-const API_BASE = "http://localhost:5000";
+const API_BASE = (import.meta.env.VITE_API_URL || "http://localhost:5000/api").replace("/api", "");
 
 export default function ProfilePhotoUpload({ size = 80 }) {
   const { user, token } = useSelector((s) => s.auth);

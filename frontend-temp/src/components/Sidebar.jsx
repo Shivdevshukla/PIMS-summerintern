@@ -72,8 +72,8 @@ export default function Sidebar() {
       <div className="px-4 py-3 border-b border-gray-100 dark:border-slate-700 flex items-center gap-3">
         {user?.profile_photo ? (
   <img
-    src={`http://localhost:5000${user.profile_photo}`}
-    alt="Profile"
+src={`${(import.meta.env.VITE_API_URL || "http://localhost:5000/api").replace("/api", "")}${user.profile_photo}`}
+  alt="Profile"
     className="w-9 h-9 rounded-full object-cover shrink-0 border-2 border-white dark:border-slate-700"
   />
 ) : (

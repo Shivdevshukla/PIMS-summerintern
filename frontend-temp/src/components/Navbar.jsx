@@ -30,8 +30,8 @@ export default function Navbar() {
         <div className="flex items-center gap-2.5 pl-1">
           {user?.profile_photo ? (
   <img
-    src={`http://localhost:5000${user.profile_photo}`}
-    alt="Profile"
+src={`${(import.meta.env.VITE_API_URL || "http://localhost:5000/api").replace("/api", "")}${user.profile_photo}`}
+  alt="Profile"
     className="w-9 h-9 rounded-full object-cover border-2 border-white dark:border-slate-700 shadow-sm"
   />
 ) : (
